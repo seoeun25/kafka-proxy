@@ -1,0 +1,16 @@
+# Maven
+target
+
+# IntelliJ
+*.iml
+*.ipr
+*.iws
+.idea
+
+# Eclipse
+.classpath
+.project
+.settings
+
+# Build 
+schema-registry/dependency-reduced-pom.xml
