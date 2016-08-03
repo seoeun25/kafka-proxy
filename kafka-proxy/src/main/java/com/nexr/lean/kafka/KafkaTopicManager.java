@@ -6,7 +6,10 @@ import kafka.common.TopicExistsException;
 import kafka.utils.ZkUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.collection.JavaConversions;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -17,6 +20,27 @@ public class KafkaTopicManager {
 
     public KafkaTopicManager() {
 
+    }
+
+    /**
+     * List topics
+     *
+     * @param zkServers
+     * @return List<String> entire topic list
+     */
+    public static List<String> listTopics(String zkServers) {
+        ZkUtils zkUtils = ZkUtils.apply(zkServers, ZK_TIMEOUT, ZK_TIMEOUT, false);
+        List<String> allTopics = new ArrayList<>();
+
+        try {
+            zkUtils.getAllTopics();
+            allTopics.addAll(JavaConversions.asJavaList(zkUtils.getAllTopics()));
+            log.debug("list topic {} ", allTopics);
+        } finally {
+            zkUtils.close();
+        }
+
+        return allTopics;
     }
 
     /**

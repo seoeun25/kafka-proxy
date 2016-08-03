@@ -22,6 +22,8 @@ public class KafkaTopicManagerTest extends KafkaProxyTest{
         int partitions = 5;
         int replications = 1;
 
+        Assert.assertEquals(0, KafkaTopicManager.listTopics(zkServers).size());
+
         // initial check
         Assert.assertEquals(false, KafkaTopicManager.topicExists(zkServers, topic));
 
@@ -30,6 +32,9 @@ public class KafkaTopicManagerTest extends KafkaProxyTest{
 
         // Check exists
         Assert.assertEquals(true, KafkaTopicManager.topicExists(zkServers, topic));
+
+        // List up Topics. in this case retrieved topic count is 1.
+        Assert.assertEquals(1, KafkaTopicManager.listTopics(zkServers).size());
 
         // TODO checking log ? Already exists
         KafkaTopicManager.createTopic(zkServers, topic, partitions, replications);
