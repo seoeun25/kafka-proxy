@@ -36,9 +36,7 @@
         <dependency>
             <groupId>com.nexr</groupId>
             <artifactId>dip-schema-registry-client</artifactId>
-            <version>1.1</version>
         </dependency>
-        <!--
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -51,12 +49,10 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
         </dependency>
-        -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
