@@ -27,23 +27,32 @@ public class DummySchemaRegistryClient implements SchemaRegistryClient {
         this.schemaStore = new HashMap<>();
         SchemaInfo employeeSchema = new SchemaInfo("employee", 1, CachedSchemaRegistryTest.employee_schema_test);
         schemaStore.put(new Integer(1), employeeSchema);
+        SchemaInfo schemaInfo = new SchemaInfo("az-avro-id", 2, CachedSchemaRegistryTest.employee_schema_test);
+        schemaStore.put(new Integer(2), schemaInfo);
+        schemaInfo = new SchemaInfo("az-avro-magicbyte-id", 3, CachedSchemaRegistryTest.employee_schema_test);
+        schemaStore.put(new Integer(3), schemaInfo);
     }
+
 
     @Override
     public String register(String topic, String schema) throws IOException, SchemaClientException {
         if (topic.equals("employee")) {
             return String.valueOf(1);
+        } else if (topic.equals("az-avro-id")) {
+            return String.valueOf(2);
+        } else if (topic.equals("az-avro-magicbyte-id")) {
+            return String.valueOf(3);
         } else {
-            throw new SchemaClientException("Following topic could be registered : employee");
+            throw new SchemaClientException("Not registered for testing. topic=" + topic);
         }
     }
 
     @Override
     public SchemaInfo getSchemaByTopicAndId(String topic, String id) throws IOException, SchemaClientException {
-        if (topic.equals("employee")) {
+        if (!topic.equals("employee") || !topic.equals("az-avro-id") || !topic.equals("az-avro-magicbyte-id")) {
             return schemaStore.get(new Integer(id));
         } else {
-            throw new SchemaClientException("Following topic could be supported : employee");
+            throw new SchemaClientException("Not registered for testing. topic=" + topic + ", id=" + id);
         }
     }
 
@@ -51,8 +60,12 @@ public class DummySchemaRegistryClient implements SchemaRegistryClient {
     public SchemaInfo getLatestSchemaByTopic(String topic) throws IOException, SchemaClientException {
         if (topic.equals("employee")) {
             return schemaStore.get(new Integer(1));
+        } else if (topic.equals("az-avro-id")) {
+            return schemaStore.get(new Integer(2));
+        } else if (topic.equals("az-avro-magicbyte-id")) {
+            return schemaStore.get(new Integer(3));
         } else {
-            throw new SchemaClientException("Following topic could be supported : employee");
+            throw new SchemaClientException("Not registered for testing. topic=" + topic);
         }
     }
 
@@ -61,6 +74,10 @@ public class DummySchemaRegistryClient implements SchemaRegistryClient {
         List<SchemaInfo> list = new ArrayList<>();
         if (topic.equals("employee")) {
             list.add(schemaStore.get(new Integer(1)));
+        } else if (topic.equals("")) {
+            list.add(schemaStore.get(new Integer(2)));
+        } else if (topic.equals("")) {
+            list.add(schemaStore.get(new Integer(3)));
         }
         return list;
     }

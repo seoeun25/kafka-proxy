@@ -12,5 +12,8 @@
         <Logger name="org.apache.zookeeper" level="warn">
             <AppenderRef ref="Console"/>
         </Logger>
+        <Logger name="com.nexr" level="debug" additivity="false" >
+            <AppenderRef ref="Console" />
+        </Logger>
     </Loggers>
 </Configuration>

@@ -76,7 +76,7 @@ public final class LocalKafkaBroker implements Closeable {
      * @throws IOException if an error occurs during initialization
      */
     public synchronized void start() throws IOException {
-        log.info("Starting Kafka broker on port {}", port);
+        log.info(" Starting Kafka broker on port {} !!", port);
 
         logsDir = Files.createTempDirectory(LocalKafkaBroker.class.getSimpleName());
         logsDir.toFile().deleteOnExit();
@@ -84,9 +84,11 @@ public final class LocalKafkaBroker implements Closeable {
                 "broker.id", TEST_BROKER_ID,
                 "log.dirs", logsDir.toAbsolutePath(),
                 "port", port,
-                "zookeeper.connect", "localhost:" + zkPort
+                "zookeeper.connect", "localhost:" + zkPort,
+                "num.partitions", "2"
         ), false));
         kafkaServer.startup();
+        log.info(" Starting Kafka broker on dir {} , {} !!", logsDir.getParent(), logsDir.getFileName());
     }
 
     /**

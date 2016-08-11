@@ -19,7 +19,6 @@ public class CachedSchemaRegistryClient {
 
     private static Logger log = LoggerFactory.getLogger(CachedSchemaRegistryClient.class);
     private ConcurrentHashMap<Integer, SchemaInfo> schemaStore;
-    private List schemaList = Collections.synchronizedList(new ArrayList());
     private SchemaRegistryClient inner;
 
     public CachedSchemaRegistryClient(SchemaRegistryClient inner) {
@@ -40,7 +39,7 @@ public class CachedSchemaRegistryClient {
             for (Integer id : ids) {
                 if (schemaStore.get(id).eqaulsSchema(new Schema.Parser().parse(schema))) {
                     schemaInfo = schemaStore.get(id);
-                    log.debug("get from cache. id {}, topic {}", id, topic);
+                    log.trace("get from cache. id {}, topic {}", id, topic);
                 }
             }
             if (schemaInfo == null) {

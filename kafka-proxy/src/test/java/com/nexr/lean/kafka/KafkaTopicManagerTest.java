@@ -1,19 +1,36 @@
 package com.nexr.lean.kafka;
 
 import kafka.common.TopicAlreadyMarkedForDeletionException;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class KafkaTopicManagerTest extends KafkaProxyTest{
+public class KafkaTopicManagerTest {
 
     private static Logger log = LoggerFactory.getLogger(KafkaTopicManagerTest.class);
 
     private static String zkServers = null;
 
-    static {
-        zkServers = "localhost:" + ZK_PORT;
+    @BeforeClass
+    public static void setupClass() {
+        try {
+            KafkaProxyTestServers.startServers();
+        } catch (Exception e) {
+            log.warn("Fail to initialize the local kafka, local zookeeper for testing");
+            Assert.fail();
+        }
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        try {
+            KafkaProxyTestServers.shutdownServers();
+        } catch (Exception e) {
+            log.warn("Fail to shutdown the local kafka, local zookeeper for testing");
+        }
     }
 
     @Test
@@ -55,6 +72,10 @@ public class KafkaTopicManagerTest extends KafkaProxyTest{
                 log.info("Topic is marked for deletion");
             }
         }
+    }
+
+    static {
+        zkServers = "localhost:" + KafkaProxyTestServers.ZK_PORT;
     }
 
 }

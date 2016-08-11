@@ -45,8 +45,9 @@ public class KafkaTopicManager {
 
     /**
      * Check topic exists or not.
+     *
      * @param zkServers Zookeeper server string. ex> host1:port1,host2:port2,...
-     * @param topic topic to check
+     * @param topic     topic to check
      * @return {@code true} if topic exists
      */
     public static boolean topicExists(String zkServers, String topic) {
@@ -60,9 +61,10 @@ public class KafkaTopicManager {
 
     /**
      * Create topic.
-     * @param zkServers Zookeeper server string. ex> host1:port1,host2:port2,...
-     * @param topic topic to create
-     * @param partitions number of topic partitions
+     *
+     * @param zkServers    Zookeeper server string. ex> host1:port1,host2:port2,...
+     * @param topic        topic to create
+     * @param partitions   number of topic partitions
      * @param replications number of replication factors
      */
     public static void createTopic(String zkServers, String topic, int partitions, int replications) {
@@ -79,8 +81,9 @@ public class KafkaTopicManager {
 
     /**
      * Delete topic.
+     *
      * @param zkServers Zookeeper server string. ex> host1:port1,host2:port2,...
-     * @param topic topic to delete
+     * @param topic     topic to delete
      */
     public static void deleteTopic(String zkServers, String topic) {
         ZkUtils zkUtils = ZkUtils.apply(zkServers, ZK_TIMEOUT, ZK_TIMEOUT, false);

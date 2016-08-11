@@ -17,6 +17,7 @@
         <log4j.version>2.5</log4j.version>
         <slf4j.version>1.7.12</slf4j.version>
         <scala.minor.version>2.10</scala.minor.version>
+        <dip.version>1.1-SNAPSHOT</dip.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -66,6 +67,11 @@
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro</artifactId>
                 <version>${avro.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexr</groupId>
+                <artifactId>dip-schema-registry-client</artifactId>
+                <version>${dip.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
