@@ -23,18 +23,28 @@ public class FetchCallable<K, V> extends ConsumerCallable<K, List<ConsumerRecord
     private static Logger log = LoggerFactory.getLogger(FetchCallable.class);
 
     private final Properties consumerProperties;
-    private long timeout = 2000;
-    private int rowNumber;  // configurable
-    private List<ConsumerRecord<K, V>> datas;
+    private long timeout = 2000; // TODO global configurable
+    private int minRowNumber;  // TODO global configurable
+    private boolean manualCommit;
+    private List<ConsumerRecord<K, V>> fetchedDatas;
     private SimpleKafkaConsumer.FetchCallback<K, V> callback;
 
-    public FetchCallable(String id, long timeout, int rowNumber, List<String> topics,
+    public FetchCallable(long timeout, int minRowNumber, List<String> topics,
                          Properties consumerProperties, SimpleKafkaConsumer.FetchCallback<K, V> callback) {
-        super(id, false);
+        this("Fetch", timeout, minRowNumber, topics, consumerProperties,
+                callback);
+    }
+
+
+    public FetchCallable(String id, long timeout, int minRowNumber, List<String> topics,
+                         Properties consumerProperties, SimpleKafkaConsumer.FetchCallback<K, V> callback) {
+        super(id);
         this.timeout = timeout;
         this.topics = topics;
-        this.rowNumber = rowNumber;
-        this.datas = new ArrayList<>(rowNumber);
+        this.groupId = consumerProperties.getProperty(ConsumerConfig.GROUP_ID_CONFIG);
+        this.minRowNumber = minRowNumber;
+        this.manualCommit = new Boolean(consumerProperties.getProperty(SimpleConsumerConfig.ENABLE_MANUAL_COMMIT_CONFIG, "false")).booleanValue();
+        this.fetchedDatas = new ArrayList<>();
         this.consumerProperties = consumerProperties;
         this.consumerProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         this.callback = callback;
@@ -44,62 +54,65 @@ public class FetchCallable<K, V> extends ConsumerCallable<K, List<ConsumerRecord
     private void consumeRecrods(ConsumerRecords<K, V> records) {
 
         for (ConsumerRecord<K, V> record : records) {
-            if (datas.size() >= rowNumber) {
-                break;
-            }
-            log.trace("consumer[{}] : partition={}, offset={}, value={}", this.id,
+            log.trace("partition={}, offset={}, value={}",
                     record.partition(), record.offset(), record.value());
-            datas.add(record);
+            fetchedDatas.add(record);
         }
     }
 
 
     @Override
     public void shutdown() {
-        log.info("Consumer {} shutdowning, wakeup consumer ", id);
+        log.info("shutdown, wakeup consumer ");
         consumer.wakeup();
     }
 
     @Override
     public List<ConsumerRecord<K, V>> call() throws Exception {
         long expireTime = System.currentTimeMillis() + timeout;
+        log.debug("call start. topic={} group={} timeout={}", topics, groupId, timeout);
         try {
             consumer.subscribe(topics);
 
-            findLastCommitedOffset();
+            findLastCommittedOffset();
 
+            int retry = 0;
             while (true) {
                 ConsumerRecords<K, V> records = (ConsumerRecords<K, V>) consumer.poll(timeout);
-                log.debug(" consumer {} , polling records count {} ", id, records.count());
+                log.debug("polling records count={} ", records.count());
                 consumeRecrods(records);
-                if (System.currentTimeMillis() >= expireTime || datas.size() >= rowNumber) {
-                    break;
+                if (System.currentTimeMillis() >= expireTime || fetchedDatas.size() >= minRowNumber) {
+                    if (records.count() == 0 && retry < 3) {
+                        retry++;
+                        log.debug("retry = {} ", retry);
+                    } else {
+                        break;
+                    }
                 }
             }
 
-            log.debug("finish poll : " + datas.size());
+            log.debug("finish poll, fetchDatas={}", fetchedDatas.size());
             if (callback != null) {
-                callback.onComplete(datas, null);
+                callback.onComplete(fetchedDatas, null);
             }
 
             if (manualCommit) {
-                log.debug("manual offset commit");
                 commitOffset();
             }
         } catch (WakeupException e) {
             // do nothing for exception.
             if (callback != null) {
-                callback.onComplete(datas, null);
+                callback.onComplete(fetchedDatas, null);
             }
         } catch (Exception e) {
-            log.warn("Fail to poll, consumer=" + id, e);
+            log.warn("Fail to fetch ", e);
             if (callback != null) {
                 callback.onComplete(null, e);
             }
         } finally {
             consumer.close();
         }
-        return datas;
+        return fetchedDatas;
     }
 
 }

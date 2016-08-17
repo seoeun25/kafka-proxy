@@ -1,6 +1,6 @@
 package com.nexr.lean.kafka.util;
 
-import com.nexr.lean.kafka.common.ConfigUtils;
+import com.nexr.lean.kafka.common.Utils;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ public final class LocalKafkaBroker implements Closeable {
 
         logsDir = Files.createTempDirectory(LocalKafkaBroker.class.getSimpleName());
         logsDir.toFile().deleteOnExit();
-        kafkaServer = new KafkaServerStartable(new KafkaConfig(ConfigUtils.keyValueToProperties(
+        kafkaServer = new KafkaServerStartable(new KafkaConfig(Utils.keyValueToProperties(
                 "broker.id", TEST_BROKER_ID,
                 "log.dirs", logsDir.toAbsolutePath(),
                 "port", port,

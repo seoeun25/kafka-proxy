@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -21,13 +22,12 @@ public abstract class ConsumerCallable<K, V, T> implements Callable<T> {
     private static Logger log = LoggerFactory.getLogger(ConsumerCallable.class);
 
     protected final String id;
-    protected final boolean manualCommit;
     protected KafkaConsumer<K, V> consumer;
     protected List<String> topics;
+    protected String groupId;
 
-    public ConsumerCallable(String id, boolean manualCommit) {
+    public ConsumerCallable(String id) {
         this.id = id;
-        this.manualCommit = manualCommit;
     }
 
     public abstract void shutdown();
@@ -36,36 +36,36 @@ public abstract class ConsumerCallable<K, V, T> implements Callable<T> {
     public abstract T call() throws Exception;
 
     /**
-     * Find the last commited offset
+     * Search the committed offset
+     *
+     * @return a map that contains <code>OffsetAndMeta</code> for each partition.
+     * <p> If there is no topic, return empty list.</p>
+     * <p> If there is no offset, the value in the map could be null.</p>
      */
-    public boolean findLastCommitedOffset() {
+    public Map<TopicPartition, OffsetAndMetadata> findLastCommittedOffset() {
         String topic = topics.get(0);
         List<PartitionInfo> partitionInfos = consumer.listTopics().get(topic);
         if (partitionInfos == null) {
-            log.debug("No partition infos");
-            return false;
+            log.debug("No partition info");
+            return new HashMap<>();
         }
-        boolean find = true;
+        Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
         for (PartitionInfo partitionInfo : partitionInfos) {
             OffsetAndMetadata offsetAndMetadata = consumer.committed(new TopicPartition(topic, partitionInfo.partition()));
-            if (offsetAndMetadata == null) {
-                log.debug("No OffsetAndMetadata of {}, {}", topic, partitionInfo.partition());
-                find = false;
-            } else {
-                log.debug("Last committed offset of partition {}, {} : {}", topic, partitionInfo.partition(),
-                        offsetAndMetadata.toString());
-            }
+            offsets.put(new TopicPartition(topic, partitionInfo.partition()), offsetAndMetadata);
         }
-        return find;
+        return offsets;
     }
 
-    public void findEndOffset() {
+    public Map<TopicPartition, Long> findEndOffset() {
+        Map<TopicPartition, Long> offsets = new HashMap<>();
         Collection<TopicPartition> assigned = consumer.assignment();
         consumer.seekToEnd(assigned);
         for (TopicPartition topicPartition : assigned) {
             long position = consumer.position(topicPartition);
-            log.debug("end offset: partition={}, position={}", topicPartition.partition(), position);
+            offsets.put(topicPartition, position);
         }
+        return offsets;
     }
 
     public List<TopicPartition> getPartitionInfos(String topic) {
@@ -78,38 +78,30 @@ public abstract class ConsumerCallable<K, V, T> implements Callable<T> {
     }
 
     public void pollOnce() {
-        ConsumerRecords<K, V> records = (ConsumerRecords<K, V>) consumer.poll(10);
-        log.debug(" consumer {} , pollOnce: records={}", id, records.count());
+        ConsumerRecords<K, V> records = (ConsumerRecords<K, V>) consumer.poll(0);
+        log.trace("pollOnce: records={}", records.count());
     }
 
     /**
      * Call this after poll()
      */
     public void commitOffset() {
-        if (!manualCommit) {
-            consumer.commitAsync(new OffsetCommitCallback() {
-                @Override
-                public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception exception) {
-                    if (exception != null) {
-                        for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-                            log.warn("Commit offset fail: {}, {}", entry.getValue().metadata(), entry.getValue().offset());
-                        }
-                        throw new KafkaProxyRuntimeException("Fail to commit offset", exception);
-                    } else {
-                        for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-                            log.debug("Commit offset : {}, {}", entry.getValue().metadata(), entry.getValue().offset());
-                        }
+        log.debug("commitOffset");
+        consumer.commitAsync(new OffsetCommitCallback() {
+            @Override
+            public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception exception) {
+                if (exception != null) {
+                    for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
+                        log.warn("Commit offset fail: {}, {}", entry.getValue().metadata(), entry.getValue().offset());
+                    }
+                    throw new KafkaProxyRuntimeException("Fail to commit offset", exception);
+                } else {
+                    for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
+                        log.debug("Commit offset : {}, {}", entry.getValue().metadata(), entry.getValue().offset());
                     }
                 }
-            });
-        }
+            }
+        });
     }
-
-    public void commitOffset(Map<TopicPartition, OffsetAndMetadata> offsets) {
-        if (!manualCommit) {
-            consumer.commitSync(offsets);
-        }
-    }
-
 
 }

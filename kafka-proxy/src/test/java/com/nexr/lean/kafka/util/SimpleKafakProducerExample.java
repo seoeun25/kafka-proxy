@@ -1,7 +1,7 @@
 package com.nexr.lean.kafka.util;
 
 import com.linkedin.camus.etl.kafka.coders.KafkaAvroMessageEncoder;
-import com.nexr.lean.kafka.common.ConfigUtils;
+import com.nexr.lean.kafka.common.Utils;
 import com.nexr.lean.kafka.serde.AvroSerdeConfig;
 import com.nexr.lean.kafka.serde.CachedSchemaRegistryTest;
 import org.apache.avro.Schema;
@@ -47,7 +47,7 @@ public class SimpleKafakProducerExample {
     }
 
     private Properties getProducerProperties() {
-        return ConfigUtils.keyValueToProperties(
+        return Utils.keyValueToProperties(
                 ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                 ProducerConfig.ACKS_CONFIG, "1",
                 ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName(),
@@ -67,9 +67,9 @@ public class SimpleKafakProducerExample {
             Object message = String.valueOf(i) + "local-aaa-new-seoeun-new--" + String.valueOf(i);
             simpleKafkaProducer.send(topic, message);
 
-            Thread.sleep(10);
+            Thread.sleep(5);
         }
-        log.debug("end send -----");
+        log.debug("end send ");
     }
 
     public void testSendAvroID(int rowNumber) throws Exception {
@@ -88,7 +88,7 @@ public class SimpleKafakProducerExample {
             record.put("name", String.valueOf(i) + "::" + record.get("name"));
             simpleKafkaProducer.send(topic, record);
 
-            Thread.sleep(100);
+            Thread.sleep(5);
         }
     }
 
@@ -109,8 +109,22 @@ public class SimpleKafakProducerExample {
             record.put("name", String.valueOf(i) + "::" + record.get("name"));
             simpleKafkaProducer.send(topic, record);
 
-            Thread.sleep(100);
+            Thread.sleep(5);
         }
+    }
+
+    public void testSendTextMessage(String topic, int rowNumber) throws Exception {
+
+        SimpleKafkaProducer simpleKafkaProducer = new SimpleKafkaProducer(SimpleKafkaProducer.PRODUCER_TYPE
+                .text, getProducerProperties());
+
+        for (int i = 0; i < rowNumber; i++) {
+            Object message = String.valueOf(i) + "local-aaa-new-seoeun-new--" + String.valueOf(i);
+            simpleKafkaProducer.send(topic, message);
+
+            Thread.sleep(5);
+        }
+        log.debug("end send text message");
     }
 
 }

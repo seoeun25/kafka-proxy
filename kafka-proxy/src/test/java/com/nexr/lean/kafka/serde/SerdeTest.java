@@ -102,6 +102,21 @@ public class SerdeTest {
         serializer.configure(configMap, false);
     }
 
+    @Test
+    public void test() {
+
+        Boolean b1 = new Boolean("true");
+        System.out.println("b1 : " + b1.booleanValue());
+
+        b1 = new Boolean(null);
+        System.out.println("b1 null: " + b1.booleanValue());
+        b1 = new Boolean("false");
+        System.out.println("b1 false: " + b1.booleanValue());
+        b1 = new Boolean("hello");
+        System.out.println("b1 hello: " + b1.booleanValue());
+
+    }
+
     static {
         schemaRegistryClass = "com.nexr.lean.kafka.util.DummySchemaRegistryClient";
         schemaRegistryUrl = "http://hello:18181/repo";

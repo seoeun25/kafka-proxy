@@ -1,6 +1,6 @@
 package com.nexr.lean.kafka;
 
-import com.nexr.lean.kafka.common.ConfigUtils;
+import com.nexr.lean.kafka.common.Utils;
 import com.nexr.lean.kafka.serde.AvroSerdeConfig;
 import com.nexr.lean.kafka.serde.GenericAvroDeserializer;
 import com.nexr.lean.kafka.serde.GenericAvroSerde;
@@ -8,6 +8,7 @@ import com.nexr.lean.kafka.util.SimpleKafakProducerExample;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 public class KafkaTopicPreviewerTest {
@@ -25,23 +27,28 @@ public class KafkaTopicPreviewerTest {
 
     private static SimpleKafakProducerExample kafkaProducer = null;
 
+    private static String testMethod = null;
     private static String zkServers = null;
     private static String brokers = null;
     private static String schemaRegistryClass = null;
     private static String schemaRegistryUrl = null;
 
     public static void setupEnvironment() {
-        zkServers = "localhost:" + KafkaProxyTestServers.ZK_PORT;
-        brokers = "localhost:" + KafkaProxyTestServers.BROKER_PORT;
-        schemaRegistryClass = "com.nexr.lean.kafka.util.DummySchemaRegistryClient";
-        schemaRegistryUrl = "http://hello:18181/repo";
+        Properties properties = KafkaProxyTestServers.getPropertiesForTesting();
+        testMethod = properties.getProperty("test.method");
+        zkServers = properties.getProperty("zkServers");
+        brokers = properties.getProperty("brokers");
+        schemaRegistryClass = properties.getProperty("schemaRegistryClass");
+        schemaRegistryUrl = properties.getProperty("schemaRegistryUrl");
     }
 
     @BeforeClass
     public static void setupClass() {
         try {
             setupEnvironment();
-            KafkaProxyTestServers.startServers();
+            if (testMethod.equals("unit-test")) {
+                KafkaProxyTestServers.startServers();
+            }
 
             kafkaProducer = new SimpleKafakProducerExample(zkServers, brokers, schemaRegistryClass, schemaRegistryUrl);
             initData();
@@ -81,7 +88,7 @@ public class KafkaTopicPreviewerTest {
 
             KafkaTopicPreviewer previewer = new KafkaTopicPreviewer(brokers);
             List<ConsumerRecord<String, String>> lists = previewer.fetch(topic, 3000, rowNumber,
-                    ConfigUtils.keyValueToProperties(
+                    Utils.keyValueToProperties(
                             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName(),
                             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName()
@@ -104,6 +111,14 @@ public class KafkaTopicPreviewerTest {
             String topic = "az-avro-id";
             int rowNumber = 10;
 
+            OffsetManager offsetManager = new OffsetManager(zkServers, brokers);
+            Map<TopicPartition, Long> endOffsets = offsetManager.getEndOffset(topic);
+            log.debug("--- endOffsets = {}", endOffsets.size());
+            for (Map.Entry<TopicPartition, Long> entry : endOffsets.entrySet()) {
+                log.debug("topic={}, partition={}, offset={}", entry.getKey().topic(), entry.getKey().partition(),
+                        entry.getValue().longValue());
+            }
+
             KafkaTopicPreviewer previewer = new KafkaTopicPreviewer(brokers);
             Properties consumerProperties = getConsumerProperties();
             consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
@@ -119,7 +134,7 @@ public class KafkaTopicPreviewerTest {
             e.printStackTrace();
             Assert.fail("Fail to preview a topic of format is text");
         } finally {
-            Thread.sleep(1000);
+            Thread.sleep(500);
         }
 
     }
@@ -153,14 +168,14 @@ public class KafkaTopicPreviewerTest {
     @Test
     public void testParallel() throws Exception {
         final String topic = "az-text";
-        final int rowNumber = 1000;
+        final int rowNumber = 100;
         final KafkaTopicPreviewer previewer = new KafkaTopicPreviewer(brokers);
 
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 List<ConsumerRecord<String, String>> list = previewer.fetch(topic, 3000, rowNumber,
-                        ConfigUtils.keyValueToProperties(
+                        Utils.keyValueToProperties(
                                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName(),
                                 ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName()
@@ -177,7 +192,7 @@ public class KafkaTopicPreviewerTest {
             @Override
             public void run() {
                 List<ConsumerRecord<String, GenericRecord>> list = previewer.fetch("az-avro-id", 2000, rowNumber,
-                        ConfigUtils.keyValueToProperties(
+                        Utils.keyValueToProperties(
                                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName(),
                                 ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, GenericAvroDeserializer.class.getName(),
@@ -206,7 +221,7 @@ public class KafkaTopicPreviewerTest {
     }
 
     private Properties getConsumerProperties() {
-        return ConfigUtils.keyValueToProperties(
+        return Utils.keyValueToProperties(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                 AvroSerdeConfig.SCHEMA_REGISTRY_CLASS_CONFIG, schemaRegistryClass,
                 AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl

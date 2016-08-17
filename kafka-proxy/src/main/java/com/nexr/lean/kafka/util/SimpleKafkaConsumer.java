@@ -1,13 +1,17 @@
 package com.nexr.lean.kafka.util;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.nexr.lean.kafka.common.KafkaProxyRuntimeException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,20 +27,14 @@ public class SimpleKafkaConsumer {
 
     public SimpleKafkaConsumer(String brokers) {
         this.brokers = brokers;
-        this.executorService = Executors.newFixedThreadPool(THREAD_NUM);
+        this.executorService = Executors.newFixedThreadPool(THREAD_NUM,
+                new ThreadFactoryBuilder().setNameFormat("consumer-pool-%d").build());
     }
 
-    /**
-     * Fetch data for the topics.
-     *
-     * @param timeout   the time spent waiting if data is not available. In milliseconds.
-     * @param rowNumber the max number of fetch data.
-     * @return the list of data retrieved
-     */
-    public <V> List<ConsumerRecord<String, V>> fetchSync(String topic, long timeout, int rowNumber, Properties
+    public <V> List<ConsumerRecord<String, V>> fetchSync(String topic, long timeout, int minRowNumber, Properties
             consumerProperties, Class<V> valueClass) {
 
-        Future<List<ConsumerRecord<String, V>>> future = fetchAsync(topic, timeout, rowNumber, consumerProperties, null);
+        Future<List<ConsumerRecord<String, V>>> future = fetchAsync(topic, timeout, minRowNumber, consumerProperties, null);
 
         try {
             return future.get();
@@ -48,12 +46,14 @@ public class SimpleKafkaConsumer {
     /**
      * Fetch data for the topics.
      *
-     * @param timeout   the time spent waiting if data is not available. In milliseconds. It will be great if this time include
-     *                  the initialize time for  kafka consumer.
-     * @param rowNumber the max number of fetch data.
-     * @return the Future of the fetchtask
+     * @param timeout      the time spent waiting if data is not available. In milliseconds. It will be great if this time include
+     *                     the initialize time for  kafka consumer.
+     * @param minRowNumber the number of fetch data approximately.
+     * @return the Future of the fetchtask. If there are lots of messages in topic, the fetch data could be
+     * greater than rowNumber. Otherwise, If there are messages fewer than rowNumber, the fetch data contain the
+     * all message but size is smaller than rowNumber.
      */
-    public <V> Future<List<ConsumerRecord<String, V>>> fetchAsync(String topic, long timeout, int rowNumber,
+    public <V> Future<List<ConsumerRecord<String, V>>> fetchAsync(String topic, long timeout, int minRowNumber,
                                                                   Properties consumerProperties,
                                                                   final FetchCallback<String, V> callback) {
         if (timeout < 0) {
@@ -63,11 +63,44 @@ public class SimpleKafkaConsumer {
 
         long taskTimeout = (timeout - 500) < 0 ? 100 : timeout - 500;
 
-        FetchCallable<String, V> previewTask = new FetchCallable<>(String.valueOf(0), taskTimeout, rowNumber, topics,
+        FetchCallable<String, V> previewTask = new FetchCallable<>(taskTimeout, minRowNumber, topics,
                 consumerProperties, callback
         );
 
         return executorService.submit(previewTask);
+    }
+
+    /**
+     * Gets the last committed offsets for a {@code topic} and {@code groupId}
+     *
+     * @param topic              the topic to check
+     * @param groupId            the group of consumer
+     * @param consumerProperties the properties for the consumer
+     * @return the last committed offsets
+     */
+    public Map<TopicPartition, OffsetAndMetadata> getCommittedOffset(String topic, String groupId, Properties consumerProperties) {
+        List<String> topics = ImmutableList.of(topic);
+        consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        GetCommittedOffsetCallable getOffsetCallable = new GetCommittedOffsetCallable<>(topics, consumerProperties);
+
+        Future result = executorService.submit(getOffsetCallable);
+        try {
+            return (Map<TopicPartition, OffsetAndMetadata>) result.get();
+        } catch (Exception e) {
+            throw new KafkaProxyRuntimeException(e);
+        }
+    }
+
+    public Map<TopicPartition, Long> getEndOffset(String topic, String groupId, Properties consumerProperties) {
+        List<String> topics = ImmutableList.of(topic);
+        consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        GetEndOffsetCallable getEndOffsetCallable = new GetEndOffsetCallable(topics, consumerProperties);
+        try {
+            Future future = executorService.submit(getEndOffsetCallable);
+            return (Map<TopicPartition, Long>) future.get();
+        } catch (Exception e) {
+            throw new KafkaProxyRuntimeException(e);
+        }
     }
 
     public void shutdown() {

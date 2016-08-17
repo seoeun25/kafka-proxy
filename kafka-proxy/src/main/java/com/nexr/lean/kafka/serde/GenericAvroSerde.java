@@ -78,12 +78,6 @@ public class GenericAvroSerde implements Serde<GenericRecord> {
             }
 
             @Override
-            public byte[] createHeader() {
-
-                return new byte[0];
-            }
-
-            @Override
             public String describe() {
                 return "MagicByte and SchemaId(4byte)";
             }
@@ -104,12 +98,6 @@ public class GenericAvroSerde implements Serde<GenericRecord> {
                 out.write(ByteBuffer.allocate(4).putInt(id).array());
             }
 
-            @Override
-            public byte[] createHeader() {
-                return new byte[0];
-            }
-
-            @Override
             public String describe() {
                 return "SchemaId(int) from SchemaRegistry in 4 byte";
             }
@@ -126,11 +114,6 @@ public class GenericAvroSerde implements Serde<GenericRecord> {
             }
 
             @Override
-            public byte[] createHeader() {
-                return new byte[0];
-            }
-
-            @Override
             public String describe() {
                 return "SchemaId(4 byte) + subject()";
             }
@@ -142,8 +125,6 @@ public class GenericAvroSerde implements Serde<GenericRecord> {
         };
 
         abstract public void write(ByteArrayOutputStream out, int id, String topic) throws IOException;
-
-        abstract public byte[] createHeader();
 
         abstract public String describe();
 

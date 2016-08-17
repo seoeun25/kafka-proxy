@@ -1,5 +1,6 @@
 package com.nexr.lean.kafka;
 
+import com.nexr.lean.kafka.util.SimpleConsumerConfig;
 import com.nexr.lean.kafka.util.SimpleKafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -22,7 +23,7 @@ public class KafkaTopicPreviewer {
             this.brokers = brokers;
             this.simpleKafkaConsumer = new SimpleKafkaConsumer(brokers);
         } catch (Exception e) {
-            throw new ConfigException("Fail to initialize SchemaRegitry", e);
+            throw new ConfigException("Fail to initialize SchemaRegistry", e);
         }
     }
 
@@ -31,20 +32,23 @@ public class KafkaTopicPreviewer {
      *
      * @param topic           a topic to retrieve
      * @param timeout         a time for expiration
-     * @param rowNumber       a number of record
+     * @param minRowNumber    a number of record
      * @param consumerConfigs a properties for the {@linkplain org.apache.kafka.clients.consumer.KafkaConsumer}.
      *                        <p> This properties should include the bootstrap-server, key-deserializer, value-deserializer and so on.
      * @param valueClass      a value class of the {@code ConsumerRecord}
      * @param <V>
-     * @return the records of {@code topic}
+     * @return the records of {@code topic}. If there are lots of messages in topic, the records could be
+     * greater than rowNumber. Otherwise, If there are messages fewer than rowNumber, the records are the
+     * all message but size is smaller than rowNumber.
      */
-    public <V> List<ConsumerRecord<String, V>> fetch(String topic, long timeout, int rowNumber, Properties consumerConfigs,
+    public <V> List<ConsumerRecord<String, V>> fetch(String topic, long timeout, int minRowNumber, Properties consumerConfigs,
                                                      Class<V> valueClass) {
         Properties properties = new Properties(consumerConfigs);
         properties.put(ConsumerConfig.GROUP_ID_CONFIG, GROUP_ID);
         consumerConfigs.put(ConsumerConfig.GROUP_ID_CONFIG, GROUP_ID);
         consumerConfigs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        List<ConsumerRecord<String, V>> datas = simpleKafkaConsumer.fetchSync(topic, timeout, rowNumber, consumerConfigs, valueClass);
+        consumerConfigs.put(SimpleConsumerConfig.ENABLE_MANUAL_COMMIT_CONFIG, "false");
+        List<ConsumerRecord<String, V>> datas = simpleKafkaConsumer.fetchSync(topic, timeout, minRowNumber, consumerConfigs, valueClass);
         return datas;
     }
 
