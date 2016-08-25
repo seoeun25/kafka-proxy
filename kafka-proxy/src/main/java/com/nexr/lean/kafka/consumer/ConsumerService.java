@@ -1,4 +1,4 @@
-package com.nexr.lean.kafka.util;
+package com.nexr.lean.kafka.consumer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -18,15 +18,23 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class SimpleKafkaConsumer {
+public class ConsumerService {
 
     public static final int THREAD_NUM = 10; // TODO make configurable
-    private static Logger log = LoggerFactory.getLogger(SimpleKafkaConsumer.class);
-    private final String brokers;
+    private static Logger log = LoggerFactory.getLogger(ConsumerService.class);
     private final ExecutorService executorService;
 
-    public SimpleKafkaConsumer(String brokers) {
-        this.brokers = brokers;
+    private static volatile ConsumerService instance;
+
+    // TODO : Use injection.
+    public static ConsumerService getInstance() {
+        if (instance == null) {
+            instance = new ConsumerService();
+        }
+        return instance;
+    }
+
+    private ConsumerService() {
         this.executorService = Executors.newFixedThreadPool(THREAD_NUM,
                 new ThreadFactoryBuilder().setNameFormat("consumer-pool-%d").build());
     }
@@ -63,7 +71,7 @@ public class SimpleKafkaConsumer {
 
         long taskTimeout = (timeout - 500) < 0 ? 100 : timeout - 500;
 
-        FetchCallable<String, V> previewTask = new FetchCallable<>(taskTimeout, minRowNumber, topics,
+        FetchTask<String, V> previewTask = new FetchTask<>(taskTimeout, minRowNumber, topics,
                 consumerProperties, callback
         );
 
@@ -81,7 +89,7 @@ public class SimpleKafkaConsumer {
     public Map<TopicPartition, OffsetAndMetadata> getCommittedOffset(String topic, String groupId, Properties consumerProperties) {
         List<String> topics = ImmutableList.of(topic);
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        GetCommittedOffsetCallable getOffsetCallable = new GetCommittedOffsetCallable<>(topics, consumerProperties);
+        GetCommittedOffsetTask getOffsetCallable = new GetCommittedOffsetTask<>(topics, consumerProperties);
 
         Future result = executorService.submit(getOffsetCallable);
         try {
@@ -94,7 +102,7 @@ public class SimpleKafkaConsumer {
     public Map<TopicPartition, Long> getEndOffset(String topic, String groupId, Properties consumerProperties) {
         List<String> topics = ImmutableList.of(topic);
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        GetEndOffsetCallable getEndOffsetCallable = new GetEndOffsetCallable(topics, consumerProperties);
+        GetEndOffsetTask getEndOffsetCallable = new GetEndOffsetTask(topics, consumerProperties);
         try {
             Future future = executorService.submit(getEndOffsetCallable);
             return (Map<TopicPartition, Long>) future.get();
@@ -103,6 +111,7 @@ public class SimpleKafkaConsumer {
         }
     }
 
+    // TODO who should call?. Still no application main.
     public void shutdown() {
         executorService.shutdown();
         try {

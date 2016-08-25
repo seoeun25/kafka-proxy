@@ -4,6 +4,7 @@ import org.apache.curator.test.TestingServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -28,10 +29,11 @@ public class LocalZKServer {
 
     public LocalZKServer(int port) throws Exception {
         this.server = new TestingServer(port);
+        File tempDir = server.getTempDirectory();
+        log.debug("Create Zookeeper log dir = {} ", tempDir.getAbsolutePath());
     }
 
     public void stop() throws IOException {
-        log.debug("Shutting down embedded ZooKeeper server at {} ...", server.getConnectString());
         server.close();
         log.info("Shutdown of embedded ZooKeeper server at {} completed", server.getConnectString());
     }

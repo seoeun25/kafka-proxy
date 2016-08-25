@@ -1,12 +1,12 @@
 package com.nexr.lean.kafka.util;
 
-import com.nexr.lean.kafka.common.Utils;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -88,7 +88,8 @@ public final class LocalKafkaBroker implements Closeable {
                 "num.partitions", "2"
         ), false));
         kafkaServer.startup();
-        log.info(" Starting Kafka broker on dir {} , {} !!", logsDir.getParent(), logsDir.getFileName());
+        log.info(" Starting Kafka broker on dir {}/{}, listFiles={} !!", logsDir.getParent(), logsDir.getFileName(),
+                logsDir.toFile().listFiles());
     }
 
     /**

@@ -1,7 +1,7 @@
 package com.nexr.lean.kafka.util;
 
 import com.linkedin.camus.etl.kafka.coders.KafkaAvroMessageEncoder;
-import com.nexr.lean.kafka.common.Utils;
+import com.nexr.lean.kafka.TopicManager;
 import com.nexr.lean.kafka.serde.AvroSerdeConfig;
 import com.nexr.lean.kafka.serde.CachedSchemaRegistryTest;
 import org.apache.avro.Schema;
@@ -59,6 +59,9 @@ public class SimpleKafakProducerExample {
 
     public void testSendTextMessage(int rowNumber) throws Exception {
         String topic = "az-text";
+        if (!TopicManager.topicExists(zkServers, brokers)) {
+            TopicManager.createTopic(zkServers, topic, 2, 1);
+        }
 
         SimpleKafkaProducer simpleKafkaProducer = new SimpleKafkaProducer(SimpleKafkaProducer.PRODUCER_TYPE
                 .text, getProducerProperties());
@@ -74,6 +77,9 @@ public class SimpleKafakProducerExample {
 
     public void testSendAvroID(int rowNumber) throws Exception {
         String topic = "az-avro-id";
+        if (!TopicManager.topicExists(zkServers, brokers)) {
+            TopicManager.createTopic(zkServers, topic, 2, 1);
+        }
 
         Properties producerProperties = getProducerProperties();
         producerProperties.setProperty(AvroSerdeConfig.SCHEMA_REGISTRY_CLASS_CONFIG, schemaRegistryClass);
@@ -94,6 +100,9 @@ public class SimpleKafakProducerExample {
 
     public void testSendAvroMAGICBYTE_ID(int rowNumber) throws Exception {
         String topic = "az-avro-magicbyte-id";
+        if (!TopicManager.topicExists(zkServers, brokers)) {
+            TopicManager.createTopic(zkServers, topic, 2, 1);
+        }
 
         Properties producerProperties = getProducerProperties();
         producerProperties.setProperty(AvroSerdeConfig.SCHEMA_REGISTRY_CLASS_CONFIG, schemaRegistryClass);
@@ -114,6 +123,13 @@ public class SimpleKafakProducerExample {
     }
 
     public void testSendTextMessage(String topic, int rowNumber) throws Exception {
+        testSendTextMessage(topic, rowNumber, 5);
+    }
+
+    public void testSendTextMessage(String topic, int rowNumber, long sleepTime) throws Exception {
+        if (!TopicManager.topicExists(zkServers, brokers)) {
+            TopicManager.createTopic(zkServers, topic, 2, 1);
+        }
 
         SimpleKafkaProducer simpleKafkaProducer = new SimpleKafkaProducer(SimpleKafkaProducer.PRODUCER_TYPE
                 .text, getProducerProperties());
@@ -122,7 +138,7 @@ public class SimpleKafakProducerExample {
             Object message = String.valueOf(i) + "local-aaa-new-seoeun-new--" + String.valueOf(i);
             simpleKafkaProducer.send(topic, message);
 
-            Thread.sleep(5);
+            Thread.sleep(sleepTime);
         }
         log.debug("end send text message");
     }

@@ -1,12 +1,15 @@
-package com.nexr.lean.kafka.util;
+package com.nexr.lean.kafka.consumer;
 
 import com.nexr.lean.kafka.common.KafkaProxyRuntimeException;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetCommitCallback;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,18 +18,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 
-public abstract class ConsumerCallable<K, V, T> implements Callable<T> {
+public abstract class ConsumerTask<K, V, T> implements Callable<T> {
 
-    private static Logger log = LoggerFactory.getLogger(ConsumerCallable.class);
+    private static Logger log = LoggerFactory.getLogger(ConsumerTask.class);
 
     protected final String id;
     protected KafkaConsumer<K, V> consumer;
     protected List<String> topics;
     protected String groupId;
 
-    public ConsumerCallable(String id) {
+    public ConsumerTask(String id) {
         this.id = id;
     }
 

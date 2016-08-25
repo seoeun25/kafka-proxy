@@ -1,4 +1,4 @@
-package com.nexr.lean.kafka.common;
+package com.nexr.lean.kafka.util;
 
 import java.util.Properties;
 import java.util.Random;

@@ -13,12 +13,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-public class KafkaTopicManager {
+public class TopicManager {
 
     private static final int ZK_TIMEOUT = (int) TimeUnit.MILLISECONDS.convert(30, TimeUnit.SECONDS);
-    private static Logger log = LoggerFactory.getLogger(KafkaTopicManager.class);
+    private static Logger log = LoggerFactory.getLogger(TopicManager.class);
 
-    public KafkaTopicManager() {
+    public TopicManager() {
 
     }
 

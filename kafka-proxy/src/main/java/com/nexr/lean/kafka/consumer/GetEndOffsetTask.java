@@ -1,9 +1,9 @@
-package com.nexr.lean.kafka.util;
+package com.nexr.lean.kafka.consumer;
 
+import com.nexr.lean.kafka.consumer.ConsumerTask;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.slf4j.Logger;
@@ -14,19 +14,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public class GetCommittedOffsetCallable<K, V> extends ConsumerCallable<K, List<ConsumerRecord<K, V>>, Map<TopicPartition, OffsetAndMetadata>> {
+public class GetEndOffsetTask<K, V> extends ConsumerTask<K, List<ConsumerRecord<K, V>>, Map<TopicPartition, Long>> {
 
-    private static Logger log = LoggerFactory.getLogger(GetCommittedOffsetCallable.class);
+    private static Logger log = LoggerFactory.getLogger(GetEndOffsetTask.class);
 
     private final Properties consumerProperties;
 
-    public GetCommittedOffsetCallable(List<String> topics,
-                                      Properties consumerProperties) {
-        this("CommittedOffset", topics, consumerProperties);
+    public GetEndOffsetTask(List<String> topics,
+                            Properties consumerProperties) {
+        this("EndOffset", topics, consumerProperties);
     }
 
-    public GetCommittedOffsetCallable(String id, List<String> topics,
-                                      Properties consumerProperties) {
+    public GetEndOffsetTask(String id, List<String> topics,
+                            Properties consumerProperties) {
         super(id);
         this.topics = topics;
         this.groupId = consumerProperties.getProperty(ConsumerConfig.GROUP_ID_CONFIG);
@@ -42,20 +42,23 @@ public class GetCommittedOffsetCallable<K, V> extends ConsumerCallable<K, List<C
     }
 
     @Override
-    public Map<TopicPartition, OffsetAndMetadata> call() throws Exception {
+    public Map<TopicPartition, Long> call() throws Exception {
         log.debug("call start. topic={} group={}", topics, groupId);
-        Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
+        Map<TopicPartition, Long> offsets = new HashMap<>();
         try {
             consumer.subscribe(topics);
 
-            offsets.putAll(findLastCommittedOffset());
+            pollOnce();
+            findEndOffset();
 
-            log.info("after get lastCommitted. groupId={}, tp size={}", groupId, offsets.size());
+            offsets.putAll(findEndOffset());
+
+            log.debug("after find EndOffset. groupId={}, tp size={}", groupId, offsets.size());
 
         } catch (WakeupException e) {
             // do nothing for this exception.
         } catch (Exception e) {
-            log.warn("Fail to get committed offset ", e);
+            log.warn("Fail to get end offset ", e);
         } finally {
             consumer.close();
         }

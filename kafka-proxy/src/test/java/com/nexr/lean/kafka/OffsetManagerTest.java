@@ -1,10 +1,11 @@
 package com.nexr.lean.kafka;
 
 import com.nexr.lean.kafka.common.OffsetInfo;
-import com.nexr.lean.kafka.common.Utils;
-import com.nexr.lean.kafka.util.SimpleConsumerConfig;
+import com.nexr.lean.kafka.util.TestServers;
+import com.nexr.lean.kafka.util.Utils;
+import com.nexr.lean.kafka.consumer.SimpleConsumerConfig;
 import com.nexr.lean.kafka.util.SimpleKafakProducerExample;
-import com.nexr.lean.kafka.util.SimpleKafkaConsumer;
+import com.nexr.lean.kafka.consumer.ConsumerService;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -22,10 +23,11 @@ import java.util.Properties;
 
 public class OffsetManagerTest {
 
-    private static Logger log = LoggerFactory.getLogger(KafkaTopicPreviewerTest.class);
+    private static Logger log = LoggerFactory.getLogger(TopicPreviewerTest.class);
 
     private static SimpleKafakProducerExample kafkaProducer = null;
     private static OffsetManager offsetManager = null;
+    private static ConsumerService consumerService = ConsumerService.getInstance();
     private static String testMethod = null;
     private static String zkServers = null;
     private static String brokers = null;
@@ -33,7 +35,7 @@ public class OffsetManagerTest {
     private static String schemaRegistryUrl = null;
 
     public static void setupEnvironment() {
-        Properties properties = KafkaProxyTestServers.getPropertiesForTesting();
+        Properties properties = TestServers.getPropertiesForTesting();
         testMethod = properties.getProperty("test.method");
         zkServers = properties.getProperty("zkServers");
         brokers = properties.getProperty("brokers");
@@ -48,7 +50,7 @@ public class OffsetManagerTest {
         try {
             setupEnvironment();
             if (testMethod.equals("unit-test")) {
-                KafkaProxyTestServers.startServers();
+                TestServers.startServers();
             }
 
             kafkaProducer = new SimpleKafakProducerExample(zkServers, brokers, schemaRegistryClass, schemaRegistryUrl);
@@ -63,7 +65,7 @@ public class OffsetManagerTest {
     @AfterClass
     public static void tearDown() {
         try {
-            KafkaProxyTestServers.shutdownServers();
+            TestServers.shutdownServers();
         } catch (Exception e) {
             log.warn("Fail to shutdown the local kafka, local zookeeper for testing");
         }
@@ -83,8 +85,8 @@ public class OffsetManagerTest {
 
         }
 
-        if (!KafkaTopicManager.topicExists(zkServers, topic)) {
-            KafkaTopicManager.createTopic(zkServers, topic, 2, 1);
+        if (!TopicManager.topicExists(zkServers, topic)) {
+            TopicManager.createTopic(zkServers, topic, 2, 1);
         }
 
         try {
@@ -113,8 +115,7 @@ public class OffsetManagerTest {
                 SimpleConsumerConfig.ENABLE_MANUAL_COMMIT_CONFIG, "true"
         );
 
-        SimpleKafkaConsumer simpleKafkaConsumer = new SimpleKafkaConsumer(brokers);
-        List datas = simpleKafkaConsumer.fetchSync(topic, 3000, 10,
+        List datas = consumerService.fetchSync(topic, 3000, 10,
                 consumerProperties, String.class);
         log.debug("fetch data size={}", datas.size());
 
@@ -152,7 +153,7 @@ public class OffsetManagerTest {
             public void run() {
                 while (true) {
                     try {
-                        kafkaProducer.testSendTextMessage(topic, 10);
+                        kafkaProducer.testSendTextMessage(topic, 10000, 30);
                         Thread.sleep(200);
                     } catch (InterruptedException e) {
                         break;
@@ -186,8 +187,7 @@ public class OffsetManagerTest {
                 SimpleConsumerConfig.ENABLE_MANUAL_COMMIT_CONFIG, "true"
         );
 
-        SimpleKafkaConsumer simpleKafkaConsumer = new SimpleKafkaConsumer(brokers);
-        List datas = simpleKafkaConsumer.fetchSync(topic, 2000, 10,
+        List datas = consumerService.fetchSync(topic, 2000, 10,
                 consumerProperties, String.class);
         log.debug("fetch data size={}", datas.size());
 
@@ -226,8 +226,8 @@ public class OffsetManagerTest {
             Assert.assertEquals(true, e.getMessage().contains("not found"));
         }
 
-        if (!KafkaTopicManager.topicExists(zkServers, topic)) {
-            KafkaTopicManager.createTopic(zkServers, topic, 2, 1);
+        if (!TopicManager.topicExists(zkServers, topic)) {
+            TopicManager.createTopic(zkServers, topic, 2, 1);
         }
         Thread.sleep(100);
 
@@ -246,8 +246,7 @@ public class OffsetManagerTest {
             public void run() {
                 while (true) {
                     try {
-                        kafkaProducer.testSendTextMessage(topic, 10);
-                        Thread.sleep(200);
+                        kafkaProducer.testSendTextMessage(topic, 10000, 50);
                     } catch (InterruptedException e) {
                         break;
                     } catch (Exception e) {
@@ -282,8 +281,7 @@ public class OffsetManagerTest {
                 SimpleConsumerConfig.ENABLE_MANUAL_COMMIT_CONFIG, "true"
         );
 
-        SimpleKafkaConsumer simpleKafkaConsumer = new SimpleKafkaConsumer(brokers);
-        List datas = simpleKafkaConsumer.fetchSync(topic, 3000, 10,
+        List datas = consumerService.fetchSync(topic, 3000, 10,
                 consumerProperties, String.class);
         log.debug("fetch data size={}", datas.size());
 

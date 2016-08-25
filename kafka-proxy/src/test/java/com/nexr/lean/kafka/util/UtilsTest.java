@@ -1,4 +1,4 @@
-package com.nexr.lean.kafka.common;
+package com.nexr.lean.kafka.util;
 
 import org.junit.Assert;
 import org.junit.Test;

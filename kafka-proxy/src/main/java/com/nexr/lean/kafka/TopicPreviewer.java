@@ -1,7 +1,7 @@
 package com.nexr.lean.kafka;
 
-import com.nexr.lean.kafka.util.SimpleConsumerConfig;
-import com.nexr.lean.kafka.util.SimpleKafkaConsumer;
+import com.nexr.lean.kafka.consumer.SimpleConsumerConfig;
+import com.nexr.lean.kafka.consumer.ConsumerService;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.config.ConfigException;
@@ -11,17 +11,17 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Properties;
 
-public class KafkaTopicPreviewer {
+public class TopicPreviewer {
 
     public static final String GROUP_ID = "previewer";
-    private static Logger log = LoggerFactory.getLogger(KafkaTopicPreviewer.class);
+    private static Logger log = LoggerFactory.getLogger(TopicPreviewer.class);
     private final String brokers;
-    private SimpleKafkaConsumer simpleKafkaConsumer;
+    private ConsumerService consumerService;
 
-    public KafkaTopicPreviewer(String brokers) {
+    public TopicPreviewer(String brokers) {
         try {
             this.brokers = brokers;
-            this.simpleKafkaConsumer = new SimpleKafkaConsumer(brokers);
+            this.consumerService = ConsumerService.getInstance();
         } catch (Exception e) {
             throw new ConfigException("Fail to initialize SchemaRegistry", e);
         }
@@ -48,7 +48,7 @@ public class KafkaTopicPreviewer {
         consumerConfigs.put(ConsumerConfig.GROUP_ID_CONFIG, GROUP_ID);
         consumerConfigs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         consumerConfigs.put(SimpleConsumerConfig.ENABLE_MANUAL_COMMIT_CONFIG, "false");
-        List<ConsumerRecord<String, V>> datas = simpleKafkaConsumer.fetchSync(topic, timeout, minRowNumber, consumerConfigs, valueClass);
+        List<ConsumerRecord<String, V>> datas = consumerService.fetchSync(topic, timeout, minRowNumber, consumerConfigs, valueClass);
         return datas;
     }
 

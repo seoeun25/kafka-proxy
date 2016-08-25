@@ -1,4 +1,4 @@
-package com.nexr.lean.kafka.util;
+package com.nexr.lean.kafka.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -18,26 +18,26 @@ import java.util.Properties;
  * @param <K> Key type
  * @param <V> Value type
  */
-public class FetchCallable<K, V> extends ConsumerCallable<K, List<ConsumerRecord<K, V>>, List<ConsumerRecord<K, V>>> {
+public class FetchTask<K, V> extends ConsumerTask<K, List<ConsumerRecord<K, V>>, List<ConsumerRecord<K, V>>> {
 
-    private static Logger log = LoggerFactory.getLogger(FetchCallable.class);
+    private static Logger log = LoggerFactory.getLogger(FetchTask.class);
 
     private final Properties consumerProperties;
     private long timeout = 2000; // TODO global configurable
     private int minRowNumber;  // TODO global configurable
     private boolean manualCommit;
     private List<ConsumerRecord<K, V>> fetchedDatas;
-    private SimpleKafkaConsumer.FetchCallback<K, V> callback;
+    private ConsumerService.FetchCallback<K, V> callback;
 
-    public FetchCallable(long timeout, int minRowNumber, List<String> topics,
-                         Properties consumerProperties, SimpleKafkaConsumer.FetchCallback<K, V> callback) {
+    public FetchTask(long timeout, int minRowNumber, List<String> topics,
+                     Properties consumerProperties, ConsumerService.FetchCallback<K, V> callback) {
         this("Fetch", timeout, minRowNumber, topics, consumerProperties,
                 callback);
     }
 
 
-    public FetchCallable(String id, long timeout, int minRowNumber, List<String> topics,
-                         Properties consumerProperties, SimpleKafkaConsumer.FetchCallback<K, V> callback) {
+    public FetchTask(String id, long timeout, int minRowNumber, List<String> topics,
+                     Properties consumerProperties, ConsumerService.FetchCallback<K, V> callback) {
         super(id);
         this.timeout = timeout;
         this.topics = topics;

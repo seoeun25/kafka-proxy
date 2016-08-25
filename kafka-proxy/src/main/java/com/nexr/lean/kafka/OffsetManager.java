@@ -2,9 +2,9 @@ package com.nexr.lean.kafka;
 
 import com.nexr.lean.kafka.common.KafkaProxyRuntimeException;
 import com.nexr.lean.kafka.common.OffsetInfo;
-import com.nexr.lean.kafka.common.Utils;
-import com.nexr.lean.kafka.util.SimpleConsumerConfig;
-import com.nexr.lean.kafka.util.SimpleKafkaConsumer;
+import com.nexr.lean.kafka.util.Utils;
+import com.nexr.lean.kafka.consumer.SimpleConsumerConfig;
+import com.nexr.lean.kafka.consumer.ConsumerService;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -21,12 +21,12 @@ public class OffsetManager {
     private static Logger log = LoggerFactory.getLogger(OffsetManager.class);
     private String zkServers;
     private String brokers;
-    private SimpleKafkaConsumer simpleKafkaConsumer;
+    private ConsumerService consumerService;
 
     public OffsetManager(String zkServers, String brokers) {
         this.zkServers = zkServers;
         this.brokers = brokers;
-        this.simpleKafkaConsumer = new SimpleKafkaConsumer(brokers);
+        this.consumerService = ConsumerService.getInstance();
     }
 
     /**
@@ -38,10 +38,10 @@ public class OffsetManager {
      * @throws KafkaProxyRuntimeException if topic does not exist.
      */
     public Map<TopicPartition, OffsetAndMetadata> getCommittedOffset(String topic, String groupId) {
-        if (!KafkaTopicManager.topicExists(zkServers, topic)) {
+        if (!TopicManager.topicExists(zkServers, topic)) {
             throw new KafkaProxyRuntimeException(String.format("Topic[%s] not found", topic));
         }
-        return simpleKafkaConsumer.getCommittedOffset(topic, groupId, Utils.keyValueToProperties(
+        return consumerService.getCommittedOffset(topic, groupId, Utils.keyValueToProperties(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                 ConsumerConfig.GROUP_ID_CONFIG, groupId,
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName(),
@@ -59,11 +59,11 @@ public class OffsetManager {
      * @throws KafkaProxyRuntimeException if topic does not exist.
      */
     public Map<TopicPartition, Long> getEndOffset(String topic) {
-        if (!KafkaTopicManager.topicExists(zkServers, topic)) {
+        if (!TopicManager.topicExists(zkServers, topic)) {
             throw new KafkaProxyRuntimeException(String.format("Topic[%s] not found", topic));
         }
         String groupId = "eo-" + Utils.randomString(8);
-        return simpleKafkaConsumer.getEndOffset(topic, groupId, Utils.keyValueToProperties(
+        return consumerService.getEndOffset(topic, groupId, Utils.keyValueToProperties(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                 ConsumerConfig.GROUP_ID_CONFIG, "eo-" + Utils.randomString(8),
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName(),

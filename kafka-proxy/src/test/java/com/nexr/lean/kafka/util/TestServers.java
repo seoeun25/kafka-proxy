@@ -1,7 +1,5 @@
-package com.nexr.lean.kafka;
+package com.nexr.lean.kafka.util;
 
-import com.nexr.lean.kafka.util.LocalKafkaBroker;
-import com.nexr.lean.kafka.util.LocalZKServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,11 +8,11 @@ import java.util.Properties;
 /**
  * This class provide local zookeeper and local kafka for testing.
  */
-public class KafkaProxyTestServers {
+public class TestServers {
 
     public static final int ZK_PORT = 3181;
     public static final int BROKER_PORT = 19092;
-    private static Logger log = LoggerFactory.getLogger(KafkaProxyTestServers.class);
+    private static Logger log = LoggerFactory.getLogger(TestServers.class);
     private static LocalZKServer zookeeperServer;
     private static LocalKafkaBroker kafkaBroker;
 
@@ -54,10 +52,10 @@ public class KafkaProxyTestServers {
     public static Properties getPropertiesForTesting() {
         // TODO The context for the testing could work with IOC container such as guice, spring and so on.
         // Currently, KafkaProxy does not use any IOC container, so that it make context manually.
-        KafkaProxyTestServers.class.getResourceAsStream("test.properties");
+        TestServers.class.getResourceAsStream("test.properties");
         Properties properties = new Properties();
         try {
-            properties.load(KafkaProxyTestServers.class.getResourceAsStream("/test.properties"));
+            properties.load(TestServers.class.getResourceAsStream("/test.properties"));
             for (Object key : properties.keySet()) {
                 log.debug("testing properties : {} = {}", key.toString(), properties.getProperty(key.toString()));
             }
@@ -70,8 +68,8 @@ public class KafkaProxyTestServers {
 
             } else {
                 properties.put("test.method", "unit-test");
-                zkServers = "localhost:" + KafkaProxyTestServers.ZK_PORT;
-                brokers = "localhost:" + KafkaProxyTestServers.BROKER_PORT;
+                zkServers = "localhost:" + TestServers.ZK_PORT;
+                brokers = "localhost:" + TestServers.BROKER_PORT;
                 schemaRegistryClass = "com.nexr.lean.kafka.util.DummySchemaRegistryClient";
                 schemaRegistryUrl = "http://hello:18181/repo";
             }

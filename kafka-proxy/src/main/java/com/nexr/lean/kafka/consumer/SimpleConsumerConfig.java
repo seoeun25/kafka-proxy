@@ -1,4 +1,4 @@
-package com.nexr.lean.kafka.util;
+package com.nexr.lean.kafka.consumer;
 
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;

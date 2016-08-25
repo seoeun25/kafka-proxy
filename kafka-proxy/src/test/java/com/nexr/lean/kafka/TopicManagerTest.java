@@ -1,5 +1,6 @@
 package com.nexr.lean.kafka;
 
+import com.nexr.lean.kafka.util.TestServers;
 import kafka.common.TopicAlreadyMarkedForDeletionException;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -8,16 +9,18 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class KafkaTopicManagerTest {
+import java.util.List;
 
-    private static Logger log = LoggerFactory.getLogger(KafkaTopicManagerTest.class);
+public class TopicManagerTest {
+
+    private static Logger log = LoggerFactory.getLogger(TopicManagerTest.class);
 
     private static String zkServers = null;
 
     @BeforeClass
     public static void setupClass() {
         try {
-            KafkaProxyTestServers.startServers();
+            TestServers.startServers();
         } catch (Exception e) {
             log.warn("Fail to initialize the local kafka, local zookeeper for testing");
             Assert.fail();
@@ -27,7 +30,7 @@ public class KafkaTopicManagerTest {
     @AfterClass
     public static void tearDown() {
         try {
-            KafkaProxyTestServers.shutdownServers();
+            TestServers.shutdownServers();
         } catch (Exception e) {
             log.warn("Fail to shutdown the local kafka, local zookeeper for testing");
         }
@@ -39,34 +42,32 @@ public class KafkaTopicManagerTest {
         int partitions = 5;
         int replications = 1;
 
-        Assert.assertEquals(0, KafkaTopicManager.listTopics(zkServers).size());
-
         // initial check
-        Assert.assertEquals(false, KafkaTopicManager.topicExists(zkServers, topic));
+        Assert.assertEquals(false, TopicManager.topicExists(zkServers, topic));
 
         // Create topic
-        KafkaTopicManager.createTopic(zkServers, topic, partitions, replications);
+        TopicManager.createTopic(zkServers, topic, partitions, replications);
 
         // Check exists
-        Assert.assertEquals(true, KafkaTopicManager.topicExists(zkServers, topic));
+        Assert.assertEquals(true, TopicManager.topicExists(zkServers, topic));
 
-        // List up Topics. in this case retrieved topic count is 1.
-        Assert.assertEquals(1, KafkaTopicManager.listTopics(zkServers).size());
+        // List up Topics.
+        Assert.assertTrue(TopicManager.listTopics(zkServers).size() > 0);
 
         // TODO checking log ? Already exists
-        KafkaTopicManager.createTopic(zkServers, topic, partitions, replications);
+        TopicManager.createTopic(zkServers, topic, partitions, replications);
 
-        Assert.assertEquals(true, KafkaTopicManager.topicExists(zkServers, topic));
-        Thread.sleep(1000);
+        Assert.assertEquals(true, TopicManager.topicExists(zkServers, topic));
+        Thread.sleep(500);
 
         // Delete topic
-        KafkaTopicManager.deleteTopic(zkServers, topic);
+        TopicManager.deleteTopic(zkServers, topic);
         Thread.sleep(1000);
 
-        if (KafkaTopicManager.topicExists(zkServers, topic)) {
+        if (TopicManager.topicExists(zkServers, topic)) {
             log.info("Topic still exists, try again");
             try {
-                KafkaTopicManager.deleteTopic(zkServers, topic);
+                TopicManager.deleteTopic(zkServers, topic);
                 Assert.fail("Topic should be deleted or marked for deletion");
             } catch (TopicAlreadyMarkedForDeletionException e) {
                 log.info("Topic is marked for deletion");
@@ -75,7 +76,7 @@ public class KafkaTopicManagerTest {
     }
 
     static {
-        zkServers = "localhost:" + KafkaProxyTestServers.ZK_PORT;
+        zkServers = "localhost:" + TestServers.ZK_PORT;
     }
 
 }

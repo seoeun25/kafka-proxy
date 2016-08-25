@@ -1,6 +1,7 @@
 package com.nexr.lean.kafka;
 
-import com.nexr.lean.kafka.common.Utils;
+import com.nexr.lean.kafka.util.TestServers;
+import com.nexr.lean.kafka.util.Utils;
 import com.nexr.lean.kafka.serde.AvroSerdeConfig;
 import com.nexr.lean.kafka.serde.GenericAvroDeserializer;
 import com.nexr.lean.kafka.serde.GenericAvroSerde;
@@ -21,9 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public class KafkaTopicPreviewerTest {
+public class TopicPreviewerTest {
 
-    private static Logger log = LoggerFactory.getLogger(KafkaTopicPreviewerTest.class);
+    private static Logger log = LoggerFactory.getLogger(TopicPreviewerTest.class);
 
     private static SimpleKafakProducerExample kafkaProducer = null;
 
@@ -34,7 +35,7 @@ public class KafkaTopicPreviewerTest {
     private static String schemaRegistryUrl = null;
 
     public static void setupEnvironment() {
-        Properties properties = KafkaProxyTestServers.getPropertiesForTesting();
+        Properties properties = TestServers.getPropertiesForTesting();
         testMethod = properties.getProperty("test.method");
         zkServers = properties.getProperty("zkServers");
         brokers = properties.getProperty("brokers");
@@ -47,7 +48,7 @@ public class KafkaTopicPreviewerTest {
         try {
             setupEnvironment();
             if (testMethod.equals("unit-test")) {
-                KafkaProxyTestServers.startServers();
+                TestServers.startServers();
             }
 
             kafkaProducer = new SimpleKafakProducerExample(zkServers, brokers, schemaRegistryClass, schemaRegistryUrl);
@@ -62,7 +63,7 @@ public class KafkaTopicPreviewerTest {
     @AfterClass
     public static void tearDown() {
         try {
-            KafkaProxyTestServers.shutdownServers();
+            TestServers.shutdownServers();
         } catch (Exception e) {
             log.warn("Fail to shutdown the local kafka, local zookeeper for testing");
         }
@@ -86,7 +87,7 @@ public class KafkaTopicPreviewerTest {
             String topic = "az-text";
             int rowNumber = 10;
 
-            KafkaTopicPreviewer previewer = new KafkaTopicPreviewer(brokers);
+            TopicPreviewer previewer = new TopicPreviewer(brokers);
             List<ConsumerRecord<String, String>> lists = previewer.fetch(topic, 3000, rowNumber,
                     Utils.keyValueToProperties(
                             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
@@ -119,7 +120,7 @@ public class KafkaTopicPreviewerTest {
                         entry.getValue().longValue());
             }
 
-            KafkaTopicPreviewer previewer = new KafkaTopicPreviewer(brokers);
+            TopicPreviewer previewer = new TopicPreviewer(brokers);
             Properties consumerProperties = getConsumerProperties();
             consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
             consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, GenericAvroDeserializer.class.getName());
@@ -146,7 +147,7 @@ public class KafkaTopicPreviewerTest {
             String topic = "az-avro-magicbyte-id";
             int rowNumber = 10;
 
-            KafkaTopicPreviewer previewer = new KafkaTopicPreviewer(brokers);
+            TopicPreviewer previewer = new TopicPreviewer(brokers);
             Properties consumerProperties = getConsumerProperties();
             consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
             consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, GenericAvroDeserializer.class.getName());
@@ -169,7 +170,7 @@ public class KafkaTopicPreviewerTest {
     public void testParallel() throws Exception {
         final String topic = "az-text";
         final int rowNumber = 100;
-        final KafkaTopicPreviewer previewer = new KafkaTopicPreviewer(brokers);
+        final TopicPreviewer previewer = new TopicPreviewer(brokers);
 
         Runnable runnable = new Runnable() {
             @Override

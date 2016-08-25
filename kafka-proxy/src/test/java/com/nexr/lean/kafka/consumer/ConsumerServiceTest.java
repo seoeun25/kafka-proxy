@@ -1,9 +1,10 @@
-package com.nexr.lean.kafka.util;
+package com.nexr.lean.kafka.consumer;
 
-import com.nexr.lean.kafka.KafkaProxyTestServers;
-import com.nexr.lean.kafka.common.Utils;
 import com.nexr.lean.kafka.serde.AvroSerdeConfig;
 import com.nexr.lean.kafka.serde.GenericAvroDeserializer;
+import com.nexr.lean.kafka.util.SimpleKafakProducerExample;
+import com.nexr.lean.kafka.util.TestServers;
+import com.nexr.lean.kafka.util.Utils;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -19,11 +20,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
-public class SimpleKafkaConsumerTest {
+public class ConsumerServiceTest {
 
-    private static Logger log = LoggerFactory.getLogger(SimpleKafkaConsumerTest.class);
+    private static Logger log = LoggerFactory.getLogger(ConsumerServiceTest.class);
 
     private static SimpleKafakProducerExample kafkaProducer = null;
+    private static ConsumerService consumerService = ConsumerService.getInstance();
 
     private static String testMethod = null;
     private static String zkServers = null;
@@ -32,7 +34,7 @@ public class SimpleKafkaConsumerTest {
     private static String schemaRegistryUrl = null;
 
     public static void setupEnvironment() {
-        Properties properties = KafkaProxyTestServers.getPropertiesForTesting();
+        Properties properties = TestServers.getPropertiesForTesting();
         testMethod = properties.getProperty("test.method");
         zkServers = properties.getProperty("zkServers");
         brokers = properties.getProperty("brokers");
@@ -47,7 +49,7 @@ public class SimpleKafkaConsumerTest {
             kafkaProducer = new SimpleKafakProducerExample(zkServers, brokers, schemaRegistryClass, schemaRegistryUrl);
 
             if (testMethod.equals("unit-test")) {
-                KafkaProxyTestServers.startServers();
+                TestServers.startServers();
             }
 
             initData();
@@ -60,7 +62,7 @@ public class SimpleKafkaConsumerTest {
     @AfterClass
     public static void tearDown() {
         try {
-            KafkaProxyTestServers.shutdownServers();
+            TestServers.shutdownServers();
         } catch (Exception e) {
             log.warn("Fail to shutdown the local kafka, local zookeeper for testing");
         }
@@ -82,9 +84,7 @@ public class SimpleKafkaConsumerTest {
         String topic = "az-text";
         String groupId = "az-group";
 
-        SimpleKafkaConsumer kafkaConsumer = new SimpleKafkaConsumer(brokers);
-
-        List<ConsumerRecord<String, String>> datas = kafkaConsumer.fetchSync(topic, 2000, 10,
+        List<ConsumerRecord<String, String>> datas = consumerService.fetchSync(topic, 2000, 10,
                 Utils.keyValueToProperties(
                         ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                         ConsumerConfig.GROUP_ID_CONFIG, groupId,
@@ -100,12 +100,6 @@ public class SimpleKafkaConsumerTest {
         log.info(" fetchSynch end");
         Assert.assertTrue(datas.size() >= 10);
 
-        try {
-            Thread.sleep(500);
-            kafkaConsumer.shutdown();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Test
@@ -113,9 +107,7 @@ public class SimpleKafkaConsumerTest {
         String topic = "az-text";
         String groupId = "az-group";
 
-        SimpleKafkaConsumer kafkaConsumer = new SimpleKafkaConsumer(brokers);
-
-        Future<List<ConsumerRecord<String, String>>> future = kafkaConsumer.fetchAsync(topic, 2000, 10,
+        Future<List<ConsumerRecord<String, String>>> future = consumerService.fetchAsync(topic, 2000, 10,
                 Utils.keyValueToProperties(
                         ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                         ConsumerConfig.GROUP_ID_CONFIG, groupId,
@@ -124,7 +116,7 @@ public class SimpleKafkaConsumerTest {
                         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName(),
                         SimpleConsumerConfig.ENABLE_MANUAL_COMMIT_CONFIG, "false"
                 ),
-                new SimpleKafkaConsumer.FetchCallback<String, String>() {
+                new ConsumerService.FetchCallback<String, String>() {
                     @Override
                     public void onComplete(List<? extends ConsumerRecord<String, String>> consumerRecords, Exception e) {
                         log.info(" fetchAynch text format, data size {}", consumerRecords.size());
@@ -143,12 +135,6 @@ public class SimpleKafkaConsumerTest {
             Assert.fail("Fail to fetch asyn from text format topic");
         }
 
-        try {
-            Thread.sleep(500);
-            kafkaConsumer.shutdown();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         log.info(" fetchASynch end");
     }
 
@@ -157,9 +143,7 @@ public class SimpleKafkaConsumerTest {
         String topic = "az-avro-id";
         String groupId = "az-group";
 
-        SimpleKafkaConsumer kafkaConsumer = new SimpleKafkaConsumer(brokers);
-
-        List<ConsumerRecord<String, GenericRecord>> list = kafkaConsumer.fetchSync(topic, 2000, 10,
+        List<ConsumerRecord<String, GenericRecord>> list = consumerService.fetchSync(topic, 2000, 10,
                 Utils.keyValueToProperties(
                         ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                         ConsumerConfig.GROUP_ID_CONFIG, groupId,
@@ -177,12 +161,6 @@ public class SimpleKafkaConsumerTest {
         log.info("records size : {},", list.size());
         Assert.assertTrue(list.size() >= 10);
 
-        try {
-            Thread.sleep(500);
-            kafkaConsumer.shutdown();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Test
@@ -190,12 +168,10 @@ public class SimpleKafkaConsumerTest {
         String topic = "az-avro-id";
         String groupId = "az-group";
 
-        SimpleKafkaConsumer simpleKafkaConsumer = new SimpleKafkaConsumer(brokers);
-
         long timeout = 2000;
         int rowNumber = 10;
 
-        Future<List<ConsumerRecord<String, GenericRecord>>> listFuture = simpleKafkaConsumer.fetchAsync(topic, timeout, rowNumber,
+        Future<List<ConsumerRecord<String, GenericRecord>>> listFuture = consumerService.fetchAsync(topic, timeout, rowNumber,
                 Utils.keyValueToProperties(
                         ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                         ConsumerConfig.GROUP_ID_CONFIG, groupId,
@@ -207,7 +183,7 @@ public class SimpleKafkaConsumerTest {
                         AvroSerdeConfig.HEADER_META_NAME_CONFIG, "ID",
                         SimpleConsumerConfig.ENABLE_MANUAL_COMMIT_CONFIG, "false"
                 ),
-                new SimpleKafkaConsumer.FetchCallback<String, GenericRecord>() {
+                new ConsumerService.FetchCallback<String, GenericRecord>() {
                     @Override
                     public void onComplete(List<? extends ConsumerRecord<String, GenericRecord>> consumerRecords, Exception e) {
                         log.info("---- fetch complete : size {} ", consumerRecords.size());
@@ -219,7 +195,6 @@ public class SimpleKafkaConsumerTest {
 
         try {
             Thread.sleep(3000);
-            simpleKafkaConsumer.shutdown();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -234,9 +209,7 @@ public class SimpleKafkaConsumerTest {
         String topic = "az-avro-magicbyte-id";
         String groupId = "az-group";
 
-        SimpleKafkaConsumer kafkaConsumer = new SimpleKafkaConsumer(brokers);
-
-        List<ConsumerRecord<String, GenericRecord>> list = kafkaConsumer.fetchSync(topic, 3000, 10,
+        List<ConsumerRecord<String, GenericRecord>> list = consumerService.fetchSync(topic, 3000, 10,
                 Utils.keyValueToProperties(
                         ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                         ConsumerConfig.GROUP_ID_CONFIG, groupId,
@@ -254,12 +227,6 @@ public class SimpleKafkaConsumerTest {
         log.info("Data size from avro-magicbyte-id : {}", list.size());
         Assert.assertTrue(list.size() >= 10);
 
-        try {
-            Thread.sleep(500);
-            kafkaConsumer.shutdown();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 }
