@@ -1,11 +1,11 @@
 package com.nexr.lean.kafka;
 
 import com.nexr.lean.kafka.common.OffsetInfo;
-import com.nexr.lean.kafka.util.TestServers;
-import com.nexr.lean.kafka.util.Utils;
+import com.nexr.lean.kafka.consumer.ConsumerService;
 import com.nexr.lean.kafka.consumer.SimpleConsumerConfig;
 import com.nexr.lean.kafka.util.SimpleKafakProducerExample;
-import com.nexr.lean.kafka.consumer.ConsumerService;
+import com.nexr.lean.kafka.util.TestServers;
+import com.nexr.lean.kafka.util.Utils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;

@@ -14,8 +14,12 @@ public class AvroSerdeConfig extends AbstractConfig {
     public static final String HEADER_META_NAME_CONFIG = "avro.meta.name";
     public static final String HEADER_META_NAME_DOC = "The name of meta format for avro message. This defined in " +
             "<code>GenericAvroSerde.Meta<code> enum.";
-    private static final String SCHEMA_REGISTRY_URL_DOC = "The url of schema registry service";
+    public static final String SCHEMA_REGISTRY_URL_DOC = "The url of schema registry service";
 
+    public static final String SCHEMA_DEFINITION_CONFIG = "schema.definition";
+    public static final String SCHEMA_DEFINITION_DOC = "The schema text";
+    public static final String CSV_DELIMITER_CONFIG = "csv.delimiter";
+    public static final String CSV_DELIMITER_DOC = "The delimiter for csv format";
 
     public AvroSerdeConfig(ConfigDef definition, Map<?, ?> originals) {
         super(definition, originals);

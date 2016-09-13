@@ -122,6 +122,21 @@ public class GenericAvroSerde implements Serde<GenericRecord> {
             public int size() {
                 return 20;
             }
+        },
+        NONE {
+            @Override
+            public void write(ByteArrayOutputStream out, int id, String topic) throws IOException {
+
+            }
+
+            public String describe() {
+                return "No SchemaId(int). Set schema directly.";
+            }
+
+            @Override
+            public int size() {
+                return 0;
+            }
         };
 
         abstract public void write(ByteArrayOutputStream out, int id, String topic) throws IOException;

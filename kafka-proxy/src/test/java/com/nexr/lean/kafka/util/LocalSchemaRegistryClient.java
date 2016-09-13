@@ -79,6 +79,16 @@ public class LocalSchemaRegistryClient implements SchemaRegistryClient {
         return null;
     }
 
+    @Override
+    public List<SchemaInfo> getLatestSchemaByTopics(List<String> topicList) throws IOException, SchemaClientException {
+        return null;
+    }
+
+    @Override
+    public String getResourceByTopic(String topic) throws IOException, SchemaClientException {
+        return null;
+    }
+
     /**
      * Gets the reverse sorted id list
      *

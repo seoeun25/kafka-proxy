@@ -1,5 +1,6 @@
 package com.nexr.lean.kafka.serde;
 
+import com.nexr.schemaregistry.Schemas;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -54,7 +55,7 @@ public class SerdeTest {
         GenericAvroDeserializer avroDeserializer = new GenericAvroDeserializer();
         avroDeserializer.configure(configMap, false);
 
-        Schema employeeSchema = new Schema.Parser().parse(CachedSchemaRegistryTest.employee_schema_test);
+        Schema employeeSchema = new Schema.Parser().parse(Schemas.employee_schema_test);
         Schema headerSchema = employeeSchema.getField("header").schema();
 
         GenericRecord record = new GenericData.Record(employeeSchema);

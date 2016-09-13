@@ -187,6 +187,9 @@ public class ConsumerServiceTest {
                     @Override
                     public void onComplete(List<? extends ConsumerRecord<String, GenericRecord>> consumerRecords, Exception e) {
                         log.info("---- fetch complete : size {} ", consumerRecords.size());
+                        log.info("---- record 0 = {}", consumerRecords.get(0));
+                        log.info("---- record 1 = {}", consumerRecords.get(1));
+
                     }
                 }
         );
@@ -225,6 +228,41 @@ public class ConsumerServiceTest {
             log.trace("record : {}", record.value().toString());
         }
         log.info("Data size from avro-magicbyte-id : {}", list.size());
+        Assert.assertTrue(list.size() >= 10);
+
+    }
+
+    @Test
+    public void testConsumeAvroNoneSync() {
+        String topic = "employee-nifi";
+        String groupId = "az-group";
+        String schemaText = "{\"namespace\": \"example.hello\",\n" +
+                " \"type\": \"record\",\n" +
+                " \"name\": \"User\",\n" +
+                " \"fields\": [\n" +
+                "     {\"name\": \"name\", \"type\": \"string\"},\n" +
+                "     {\"name\": \"favorite_number\",  \"type\": [\"int\", \"null\"]},\n" +
+                "     {\"name\": \"favorite_color\", \"type\": [\"string\", \"null\"]}\n" +
+                " ]\n" +
+                "}";
+
+        List<ConsumerRecord<String, GenericRecord>> list = consumerService.fetchSync(topic, 2000, 10,
+                Utils.keyValueToProperties(
+                        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
+                        ConsumerConfig.GROUP_ID_CONFIG, groupId,
+                        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
+                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName(),
+                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, GenericAvroDeserializer.class.getName(),
+                        AvroSerdeConfig.SCHEMA_REGISTRY_CLASS_CONFIG, schemaRegistryClass,
+                        AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl,
+                        AvroSerdeConfig.HEADER_META_NAME_CONFIG, "NONE",
+                        AvroSerdeConfig.SCHEMA_DEFINITION_CONFIG, schemaText,
+                        SimpleConsumerConfig.ENABLE_MANUAL_COMMIT_CONFIG, "false"
+                ), GenericRecord.class);
+        for (ConsumerRecord<String, GenericRecord> record : list) {
+            log.trace("record : {}", record.value().toString());
+        }
+        log.info("records size : {},", list.size());
         Assert.assertTrue(list.size() >= 10);
 
     }

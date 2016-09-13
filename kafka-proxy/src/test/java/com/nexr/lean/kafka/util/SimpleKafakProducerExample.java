@@ -3,16 +3,20 @@ package com.nexr.lean.kafka.util;
 import com.linkedin.camus.etl.kafka.coders.KafkaAvroMessageEncoder;
 import com.nexr.lean.kafka.TopicManager;
 import com.nexr.lean.kafka.serde.AvroSerdeConfig;
+import com.nexr.lean.kafka.serde.CSVToAvroSerializer;
 import com.nexr.lean.kafka.serde.CachedSchemaRegistryTest;
 import com.nexr.lean.kafka.serde.GenericAvroSerializer;
+import com.nexr.schemaregistry.Schemas;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.util.Properties;
 
 public class SimpleKafakProducerExample {
@@ -32,7 +36,7 @@ public class SimpleKafakProducerExample {
     }
 
     public static GenericRecord createEmployeeRecord(String topic) {
-        Schema employeeSchema = new Schema.Parser().parse(CachedSchemaRegistryTest.employee_schema_test);
+        Schema employeeSchema = new Schema.Parser().parse(Schemas.employee_schema_test);
 
         Schema headerSchema = employeeSchema.getField("header").schema();
 
@@ -44,6 +48,15 @@ public class SimpleKafakProducerExample {
         GenericRecord header = new GenericData.Record(headerSchema);
         header.put("time", record.get("wrk_dt"));
         record.put("header", header);
+        return record;
+    }
+
+    public static GenericRecord createEmployeeRecordIntType(String topic) {
+        Schema employeeSchema = new Schema.Parser().parse(Schemas.employee_schema5);
+
+        GenericRecord record = new GenericData.Record(employeeSchema);
+        record.put("name", "seoeun");
+        record.put("favorite_number", String.valueOf(7));
         return record;
     }
 
@@ -147,6 +160,30 @@ public class SimpleKafakProducerExample {
             Thread.sleep(sleepTime);
         }
         log.debug("end send text message");
+    }
+
+    public void testSendCVSToAvroType(String topic, int rowNumber, long sleepTime) throws Exception{
+        if (!TopicManager.topicExists(zkServers, brokers)) {
+            TopicManager.createTopic(zkServers, topic, 2, 1);
+        }
+
+        Properties producerProperties = getProducerProperties();
+        producerProperties.setProperty(AvroSerdeConfig.SCHEMA_REGISTRY_CLASS_CONFIG, schemaRegistryClass);
+        producerProperties.setProperty(AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
+        producerProperties.setProperty(AvroSerdeConfig.HEADER_META_NAME_CONFIG, "ID");
+        producerProperties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        producerProperties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, CSVToAvroSerializer.class.getName());
+
+        SimpleKafkaProducer simpleKafkaProducer = new SimpleKafkaProducer(SimpleKafkaProducer.PRODUCER_TYPE.avro,
+                producerProperties);
+
+        for (int i = 0; i < rowNumber; i++) {
+            String line = String.format("az-name-%s,9,green", String.valueOf(i));
+            simpleKafkaProducer.send(topic, line.getBytes());
+
+            Thread.sleep(sleepTime);
+        }
+
     }
 
 }

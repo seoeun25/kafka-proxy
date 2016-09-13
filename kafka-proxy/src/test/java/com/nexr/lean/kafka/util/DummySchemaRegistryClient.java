@@ -4,6 +4,7 @@ import com.nexr.lean.kafka.serde.CachedSchemaRegistryTest;
 import com.nexr.schemaregistry.SchemaClientException;
 import com.nexr.schemaregistry.SchemaInfo;
 import com.nexr.schemaregistry.SchemaRegistryClient;
+import com.nexr.schemaregistry.Schemas;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,12 +26,14 @@ public class DummySchemaRegistryClient implements SchemaRegistryClient {
     public DummySchemaRegistryClient(String baseUrl) {
         this.baseUrl = baseUrl;
         this.schemaStore = new HashMap<>();
-        SchemaInfo employeeSchema = new SchemaInfo("employee", 1, CachedSchemaRegistryTest.employee_schema_test);
+        SchemaInfo employeeSchema = new SchemaInfo("employee", 1, Schemas.employee_schema_test);
         schemaStore.put(new Integer(1), employeeSchema);
-        SchemaInfo schemaInfo = new SchemaInfo("az-avro-id", 2, CachedSchemaRegistryTest.employee_schema_test);
+        SchemaInfo schemaInfo = new SchemaInfo("az-avro-id", 2, Schemas.employee_schema_test);
         schemaStore.put(new Integer(2), schemaInfo);
-        schemaInfo = new SchemaInfo("az-avro-magicbyte-id", 3, CachedSchemaRegistryTest.employee_schema_test);
+        schemaInfo = new SchemaInfo("az-avro-magicbyte-id", 3, Schemas.employee_schema_test);
         schemaStore.put(new Integer(3), schemaInfo);
+        schemaInfo = new SchemaInfo("employee-csv-avro", 4, Schemas.employee_schema3);
+        schemaStore.put(new Integer(4), schemaInfo);
     }
 
 
@@ -42,6 +45,8 @@ public class DummySchemaRegistryClient implements SchemaRegistryClient {
             return String.valueOf(2);
         } else if (topic.equals("az-avro-magicbyte-id")) {
             return String.valueOf(3);
+        } else if (topic.equals("employee-csv-avro")) {
+            return String.valueOf(4);
         } else {
             throw new SchemaClientException("Not registered for testing. topic=" + topic);
         }
@@ -49,7 +54,8 @@ public class DummySchemaRegistryClient implements SchemaRegistryClient {
 
     @Override
     public SchemaInfo getSchemaByTopicAndId(String topic, String id) throws IOException, SchemaClientException {
-        if (!topic.equals("employee") || !topic.equals("az-avro-id") || !topic.equals("az-avro-magicbyte-id")) {
+        if (!topic.equals("employee") || !topic.equals("az-avro-id") || !topic.equals("az-avro-magicbyte-id") ||
+                !topic.equals("employee-csv-avro")) {
             return schemaStore.get(new Integer(id));
         } else {
             throw new SchemaClientException("Not registered for testing. topic=" + topic + ", id=" + id);
@@ -64,6 +70,8 @@ public class DummySchemaRegistryClient implements SchemaRegistryClient {
             return schemaStore.get(new Integer(2));
         } else if (topic.equals("az-avro-magicbyte-id")) {
             return schemaStore.get(new Integer(3));
+        } else if (topic.equals("employee-csv-avro")) {
+            return schemaStore.get(new Integer(4));
         } else {
             throw new SchemaClientException("Not registered for testing. topic=" + topic);
         }
@@ -74,16 +82,28 @@ public class DummySchemaRegistryClient implements SchemaRegistryClient {
         List<SchemaInfo> list = new ArrayList<>();
         if (topic.equals("employee")) {
             list.add(schemaStore.get(new Integer(1)));
-        } else if (topic.equals("")) {
+        } else if (topic.equals("az-avro-id")) {
             list.add(schemaStore.get(new Integer(2)));
-        } else if (topic.equals("")) {
+        } else if (topic.equals("az-avro-magicbyte-id")) {
             list.add(schemaStore.get(new Integer(3)));
+        } else if (topic.equals("employee-csv-avro")) {
+            list.add(schemaStore.get(new Integer(4)));
         }
         return list;
     }
 
     @Override
     public List<SchemaInfo> getLatestSchemaAll() throws IOException, SchemaClientException {
+        return null;
+    }
+
+    @Override
+    public List<SchemaInfo> getLatestSchemaByTopics(List<String> topicList) throws IOException, SchemaClientException {
+        return null;
+    }
+
+    @Override
+    public String getResourceByTopic(String topic) throws IOException, SchemaClientException {
         return null;
     }
 

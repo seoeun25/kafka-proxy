@@ -23,19 +23,30 @@ public class GenericAvroDeserializer implements Deserializer<GenericRecord> {
     private final DecoderFactory decoderFactory = DecoderFactory.get();
     private GenericAvroSerde.Meta meta = null;
     private CachedSchemaRegistryClient schemarRegistry;
+    private Schema schemaProperty;
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
         meta = GenericAvroSerde.getHeader(configs.get(AvroSerdeConfig.HEADER_META_NAME_CONFIG));
-        Object url = configs.get(AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG);
-        try {
-            log.debug("schemaRegistry baseUrl {} ", url);
-            SchemaRegistryClient actualClient = GenericAvroSerde.initializeSchemaRegistry(configs.get(AvroSerdeConfig
-                    .SCHEMA_REGISTRY_CLASS_CONFIG).toString(), url.toString());
-            log.debug("actualSchemaRegistry {} ", actualClient.getClass().getName());
-            schemarRegistry = new CachedSchemaRegistryClient(actualClient);
-        } catch (Exception e) {
-            throw new ConfigException("Fail to initialize SchemaRegitry", e);
+        if (meta == GenericAvroSerde.Meta.NONE) {
+            try {
+                String schemaDefinition = configs.get(AvroSerdeConfig.SCHEMA_DEFINITION_CONFIG).toString();
+                schemaProperty = new Schema.Parser().parse(schemaDefinition);
+            } catch ( Exception e) {
+                throw new ConfigException("Fail to initialize schema for schema_definition : " + configs.get(AvroSerdeConfig
+                        .SCHEMA_DEFINITION_CONFIG));
+            }
+        } else {
+            Object url = configs.get(AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG);
+            try {
+                log.debug("schemaRegistry baseUrl {} ", url);
+                SchemaRegistryClient actualClient = GenericAvroSerde.initializeSchemaRegistry(configs.get(AvroSerdeConfig
+                        .SCHEMA_REGISTRY_CLASS_CONFIG).toString(), url.toString());
+                log.debug("actualSchemaRegistry {} ", actualClient.getClass().getName());
+                schemarRegistry = new CachedSchemaRegistryClient(actualClient);
+            } catch (Exception e) {
+                throw new ConfigException("Fail to initialize SchemaRegistry", e);
+            }
         }
     }
 
@@ -55,7 +66,8 @@ public class GenericAvroDeserializer implements Deserializer<GenericRecord> {
         try {
             ByteBuffer byteBuffer = getByteBuffer(data);
             id = byteBuffer.getInt();
-            Schema schema = schemarRegistry.getSchemaByTopicAndId(topic, String.valueOf(id)).parseSchema();
+            Schema schema = meta == GenericAvroSerde.Meta.NONE ? schemaProperty :
+                    schemarRegistry.getSchemaByTopicAndId(topic, String.valueOf(id)) .parseSchema();
             int length = byteBuffer.limit() - meta.size();
             int start = byteBuffer.position() + byteBuffer.arrayOffset();
             DatumReader<GenericData.Record> datumReader = new GenericDatumReader<>(schema);

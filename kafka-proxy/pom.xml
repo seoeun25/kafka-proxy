@@ -57,6 +57,11 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.kitesdk</groupId>
+            <artifactId>kite-data-core</artifactId>
+            <version>1.0.0</version>
+        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
@@ -72,6 +77,13 @@
             <groupId>com.linkedin.camus</groupId>
             <artifactId>camus-kafka-coders</artifactId>
             <version>0.1.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.nexr</groupId>
+            <artifactId>dip-schema-registry-client</artifactId>
+            <version>${dip.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 

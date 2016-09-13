@@ -68,6 +68,21 @@ public class CachedSchemaRegistryClient {
         return schemaInfo;
     }
 
+    public SchemaInfo getSchemaByTopic(String topic) throws IOException, SchemaClientException {
+        SchemaInfo schemaInfo = null;
+        List<Integer> ids = getIdsByTopic(topic);
+        if (ids.size() == 0) { // no cache
+            schemaInfo = inner.getLatestSchemaByTopic(topic);
+            schemaStore.put(new Integer(schemaInfo.getId()), schemaInfo);
+        } else {
+            schemaInfo = schemaStore.get(new Integer(ids.get(0)));
+            log.trace("get from cache");
+        }
+        log.info("---- scheamInfo = {}", schemaInfo.toString());
+
+        return schemaInfo;
+    }
+
     public SchemaInfo getLatestSchemaByTopic(String topic) throws IOException, SchemaClientException {
         return inner.getLatestSchemaByTopic(topic);
     }

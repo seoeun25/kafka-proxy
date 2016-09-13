@@ -1,5 +1,7 @@
 package com.nexr.lean.kafka.util;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
@@ -17,6 +19,17 @@ public class Utils {
             properties.setProperty(keyValues[i].toString(), keyValues[i + 1].toString());
         }
         return properties;
+    }
+
+    public static Map keyValueToMap(Object... keyValues) {
+        if ((keyValues.length % 2) != 0) {
+            throw new IllegalArgumentException("Key should be pair with value");
+        }
+        Map map = new HashMap();
+        for (int i = 0; i < keyValues.length; i += 2) {
+            map.put(keyValues[i].toString(), keyValues[i + 1].toString());
+        }
+        return map;
     }
 
     public static String randomString(int length) {
