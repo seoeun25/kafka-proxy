@@ -2,6 +2,7 @@ package com.nexr.lean.kafka.util;
 
 import com.nexr.lean.kafka.common.KafkaProxyException;
 import com.nexr.lean.kafka.serde.AvroSerdeConfig;
+import com.nexr.lean.kafka.serde.CSVToAvroSerializer;
 import com.nexr.lean.kafka.serde.GenericAvroSerializer;
 import org.apache.kafka.clients.producer.BufferExhaustedException;
 import org.apache.kafka.clients.producer.Callback;
@@ -9,6 +10,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +69,7 @@ public class SimpleKafkaProducer {
         messageProducer.close();
     }
 
-    public static enum PRODUCER_TYPE {
+    public enum PRODUCER_TYPE {
         /**
          * String Message Format
          */
@@ -88,7 +90,6 @@ public class SimpleKafkaProducer {
         public MessageProducer(Properties context) throws KafkaProxyException {
             try {
                 properties = context;
-                properties.putAll(getSerde());
                 producer = createKafkaProduer(properties);
                 sender = new Sender();
             } catch (Exception e) {
@@ -109,12 +110,6 @@ public class SimpleKafkaProducer {
             producer.close();
         }
 
-        public Map<String, Object> getSerde() {
-            Map<String, Object> props = new HashMap<>();
-            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, GenericAvroSerializer.class.getName());
-            return props;
-        }
     }
 
     public static class DefaultProducer extends MessageProducer<String, Object> {
@@ -137,13 +132,6 @@ public class SimpleKafkaProducer {
 
         public TextProducer(Properties context) throws KafkaProxyException {
             super(context);
-        }
-
-        public Map<String, Object> getSerde() {
-            Map<String, Object> props = new HashMap<>();
-            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-            return props;
         }
     }
 

@@ -4,6 +4,7 @@ import com.linkedin.camus.etl.kafka.coders.KafkaAvroMessageEncoder;
 import com.nexr.lean.kafka.TopicManager;
 import com.nexr.lean.kafka.serde.AvroSerdeConfig;
 import com.nexr.lean.kafka.serde.CachedSchemaRegistryTest;
+import com.nexr.lean.kafka.serde.GenericAvroSerializer;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -82,12 +83,15 @@ public class SimpleKafakProducerExample {
         }
 
         Properties producerProperties = getProducerProperties();
+        producerProperties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        producerProperties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, GenericAvroSerializer.class.getName());
         producerProperties.setProperty(AvroSerdeConfig.SCHEMA_REGISTRY_CLASS_CONFIG, schemaRegistryClass);
         producerProperties.setProperty(AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
         producerProperties.setProperty(AvroSerdeConfig.HEADER_META_NAME_CONFIG, "ID");
 
         SimpleKafkaProducer simpleKafkaProducer = new SimpleKafkaProducer(SimpleKafkaProducer.PRODUCER_TYPE.avro,
                 producerProperties);
+
 
         for (int i = 0; i < rowNumber; i++) {
             GenericRecord record = createEmployeeRecord(topic);
@@ -105,6 +109,8 @@ public class SimpleKafakProducerExample {
         }
 
         Properties producerProperties = getProducerProperties();
+        producerProperties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        producerProperties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, GenericAvroSerializer.class.getName());
         producerProperties.setProperty(AvroSerdeConfig.SCHEMA_REGISTRY_CLASS_CONFIG, schemaRegistryClass);
         producerProperties.setProperty(AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
         producerProperties.setProperty(AvroSerdeConfig.HEADER_META_NAME_CONFIG, "MAGICBYTE_ID");
