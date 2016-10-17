@@ -7,6 +7,7 @@ import com.nexr.lean.kafka.util.SimpleKafakProducerExample;
 import com.nexr.lean.kafka.util.TestServers;
 import com.nexr.lean.kafka.util.Utils;
 import com.nexr.schemaregistry.SchemaClientException;
+import com.nexr.schemaregistry.SchemaRegistryClient;
 import com.nexr.schemaregistry.Schemas;
 import com.nexr.schemaregistry.SimpleSchemaRegistryClient;
 import org.apache.avro.Schema;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -125,27 +127,30 @@ public class CSVToAvroSerializerTest {
 
     @Test
     public void testCSVToAvroAndDeserialize() throws InterruptedException{
-
         String topic = "employee-csv-avro";
 
-        SimpleSchemaRegistryClient client = new SimpleSchemaRegistryClient(schemaRegistryUrl);
         try {
-            log.info("---- \n" + Schemas.employee_schema3);
-            client.register(topic, Schemas.employee_schema3);
-        } catch (IOException e) {
+            SchemaRegistryClient actualClient = GenericAvroSerde.initializeSchemaRegistry(schemaRegistryClass, schemaRegistryUrl);
+            log.info("---- actualClient = {}", actualClient.getClass().getName());
+
+            log.info("schema for {} : \n{}", topic, Schemas.employee_schema3);
+            String id = actualClient.register(topic, Schemas.employee_schema3);
+            log.info("schema id = {}", id);
+
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (SchemaClientException e) {
-            e.printStackTrace();
+            Assert.fail(e.getMessage());
         }
 
         try {
             SimpleKafakProducerExample simpleKafakProducerExample = new SimpleKafakProducerExample(zkServers, brokers,
                     schemaRegistryClass, schemaRegistryUrl);
-            simpleKafakProducerExample.testSendCVSToAvroType(topic, 10, 5);
+            simpleKafakProducerExample.testSendCSVToAvroType(topic, 10, 5);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
+        // consume the avro message from kafka
         Properties consumerProperties = Utils.keyValueToProperties(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers,
                 ConsumerConfig.GROUP_ID_CONFIG, "az-group-csv",
@@ -176,9 +181,11 @@ public class CSVToAvroSerializerTest {
         Assert.assertTrue(list.size() > 0);
         Assert.assertEquals(GenericData.Record.class, list.get(0).value().getClass());
         GenericData.Record record = (GenericData.Record) list.get(0).value();
-        Assert.assertEquals("9", record.get("id_number").toString());
-
-
+        for (ConsumerRecord<String, GenericRecord> consumerRecord: list) {
+            GenericData.Record record1 = (GenericData.Record) consumerRecord.value();
+            log.info("consumerRecord = [{},{},{}]", record1.get(0), record1.get(1), record1.get(2));
+        }
+        Assert.assertEquals("9", record.get("favorite_number").toString());
     }
 
 }

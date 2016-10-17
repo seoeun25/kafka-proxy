@@ -4,19 +4,16 @@ import com.linkedin.camus.etl.kafka.coders.KafkaAvroMessageEncoder;
 import com.nexr.lean.kafka.TopicManager;
 import com.nexr.lean.kafka.serde.AvroSerdeConfig;
 import com.nexr.lean.kafka.serde.CSVToAvroSerializer;
-import com.nexr.lean.kafka.serde.CachedSchemaRegistryTest;
 import com.nexr.lean.kafka.serde.GenericAvroSerializer;
 import com.nexr.schemaregistry.Schemas;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.util.Properties;
 
 public class SimpleKafakProducerExample {
@@ -162,7 +159,7 @@ public class SimpleKafakProducerExample {
         log.debug("end send text message");
     }
 
-    public void testSendCVSToAvroType(String topic, int rowNumber, long sleepTime) throws Exception{
+    public void testSendCSVToAvroType(String topic, int rowNumber, long sleepTime) throws Exception{
         if (!TopicManager.topicExists(zkServers, brokers)) {
             TopicManager.createTopic(zkServers, topic, 2, 1);
         }

@@ -74,12 +74,11 @@ public class CachedSchemaRegistryClient {
         if (ids.size() == 0) { // no cache
             schemaInfo = inner.getLatestSchemaByTopic(topic);
             schemaStore.put(new Integer(schemaInfo.getId()), schemaInfo);
+            log.debug("Cache the latest schemaInfo = {}", schemaInfo.toString());
         } else {
             schemaInfo = schemaStore.get(new Integer(ids.get(0)));
             log.trace("get from cache");
         }
-        log.info("---- scheamInfo = {}", schemaInfo.toString());
-
         return schemaInfo;
     }
 

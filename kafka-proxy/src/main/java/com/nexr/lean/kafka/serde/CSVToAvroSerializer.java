@@ -35,9 +35,17 @@ public class CSVToAvroSerializer implements Serializer<byte[]> {
         Object url = configs.get(AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG);
         try {
             log.debug("schemaRegistry baseUrl {} ", url);
+            if (configs.get(AvroSerdeConfig.SCHEMA_REGISTRY_CLASS_CONFIG) == null) {
+                throw new IllegalArgumentException(String.format("%s can not be null",
+                        new Object[]{AvroSerdeConfig.SCHEMA_REGISTRY_CLASS_CONFIG}));
+            }
             SchemaRegistryClient actualClient = GenericAvroSerde.initializeSchemaRegistry(configs.get(AvroSerdeConfig
                     .SCHEMA_REGISTRY_CLASS_CONFIG).toString(), url.toString());
             log.debug("actualSchemaRegistry {} ", actualClient.getClass().getName());
+            if (configs.get(AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG) == null) {
+                throw new IllegalArgumentException(String.format("%s can not be null",
+                        new Object[]{AvroSerdeConfig.SCHEMA_REGISTRY_URL_CONFIG}));
+            }
             schemarRegistry = new CachedSchemaRegistryClient(actualClient);
             if (!configs.containsKey(AvroSerdeConfig.CSV_DELIMITER_CONFIG)) {
                 log.info("No configs for {}, Use default=[{}]", AvroSerdeConfig.CSV_DELIMITER_CONFIG, csvDelimiter);
@@ -46,7 +54,7 @@ public class CSVToAvroSerializer implements Serializer<byte[]> {
             }
             csvProperties = new CSVProperties.Builder().delimiter(csvDelimiter).build();
         } catch (Exception e) {
-            throw new ConfigException("Fail to configure.", e);
+            throw new ConfigException("", e);
         }
     }
 
